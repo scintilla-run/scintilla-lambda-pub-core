@@ -1,0 +1,6 @@
+{
+  "protocol": "stdio-json-v1",
+  "invocationId": "request-02",
+  "timeoutMs": 3600001,
+  "payload": null
+}

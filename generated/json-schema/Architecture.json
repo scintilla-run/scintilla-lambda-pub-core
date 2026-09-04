@@ -1,0 +1,11 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "Architecture.json",
+    "type": "string",
+    "enum": [
+        "amd64",
+        "arm64",
+        "armv7",
+        "riscv64"
+    ]
+}

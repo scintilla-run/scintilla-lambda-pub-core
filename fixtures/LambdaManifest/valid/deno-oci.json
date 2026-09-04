@@ -1,0 +1,15 @@
+{
+  "apiVersion": "scintilla.run/lambda/v1",
+  "name": "deno-oci-example",
+  "runtime": "deno",
+  "runtimeVersion": "2",
+  "protocol": "stdio-json-v1",
+  "handler": "main",
+  "artifact": {
+    "kind": "container",
+    "format": "oci",
+    "image": "registry.example.test/functions/deno",
+    "digest": "sha256:bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "entrypoint": ["deno", "run", "--no-prompt", "main.ts"]
+  }
+}

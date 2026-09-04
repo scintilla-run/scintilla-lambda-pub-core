@@ -1,0 +1,15 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "Runtime.json",
+    "type": "string",
+    "enum": [
+        "nodejs",
+        "bun",
+        "deno",
+        "rust",
+        "erlang",
+        "gleam",
+        "golang",
+        "binary"
+    ]
+}

@@ -1,0 +1,14 @@
+{
+  "apiVersion": "scintilla.run/lambda/v1",
+  "name": "rust-executable-example",
+  "runtime": "rust",
+  "protocol": "stdio-json-v1",
+  "handler": "main",
+  "artifact": {
+    "kind": "executable",
+    "command": "./bin/rust-lambda",
+    "sha256": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd",
+    "os": "linux",
+    "architecture": "arm64"
+  }
+}

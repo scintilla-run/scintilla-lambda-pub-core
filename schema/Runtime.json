@@ -1,0 +1,8 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scintilla.run/schemas/lambda/v1/Runtime.json",
+  "title": "Lambda runtime",
+  "description": "Language/runtime identity is independent from container or executable packaging.",
+  "type": "string",
+  "enum": ["nodejs", "bun", "deno", "rust", "erlang", "gleam", "golang", "binary"]
+}

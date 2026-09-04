@@ -1,0 +1,9 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "ContainerFormat.json",
+    "type": "string",
+    "enum": [
+        "docker",
+        "oci"
+    ]
+}

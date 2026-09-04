@@ -1,0 +1,14 @@
+{
+  "apiVersion": "scintilla.run/lambda/v1",
+  "name": "golang-executable-example",
+  "runtime": "golang",
+  "protocol": "stdio-json-v1",
+  "handler": "main",
+  "artifact": {
+    "kind": "executable",
+    "command": "./bin/go-lambda",
+    "sha256": "1111111111111111111111111111111111111111111111111111111111111111",
+    "os": "linux",
+    "architecture": "amd64"
+  }
+}

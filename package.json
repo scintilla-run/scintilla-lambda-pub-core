@@ -1,0 +1,16 @@
+{
+  "name": "@scintilla-run/scintilla-lambda-pub-core-contracts",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "generate": "tsp compile typespec/main.tsp --config tspconfig.yaml --warn-as-error && node scripts/sync-js-targets.mjs",
+    "verify": "npm run generate && node scripts/verify-contracts.mjs",
+    "test": "npm run verify"
+  },
+  "devDependencies": {
+    "@typespec/compiler": "1.15.0",
+    "@typespec/json-schema": "1.15.0",
+    "ajv": "8.20.0"
+  }
+}

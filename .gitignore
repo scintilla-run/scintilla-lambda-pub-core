@@ -1,0 +1,10 @@
+node_modules/
+target/
+build/
+_build/
+.zed/
+.zed-pack/
+.zpkg.lock
+*.beam
+erl_crash.dump
+.DS_Store

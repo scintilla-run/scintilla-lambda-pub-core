@@ -1,0 +1,9 @@
+warn-as-error: true
+output-dir: "{project-root}/generated"
+emit:
+  - "@typespec/json-schema"
+options:
+  "@typespec/json-schema":
+    emitter-output-dir: "{output-dir}/json-schema"
+    file-type: json
+    seal-object-schemas: true

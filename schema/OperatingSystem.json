@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scintilla.run/schemas/lambda/v1/OperatingSystem.json",
+  "title": "Executable operating system",
+  "type": "string",
+  "enum": ["linux", "darwin", "windows", "freebsd"]
+}

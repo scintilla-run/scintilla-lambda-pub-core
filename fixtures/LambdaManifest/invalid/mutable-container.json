@@ -1,0 +1,13 @@
+{
+  "apiVersion": "scintilla.run/lambda/v1",
+  "name": "mutable-container",
+  "runtime": "nodejs",
+  "protocol": "stdio-json-v1",
+  "handler": "index.handler",
+  "artifact": {
+    "kind": "container",
+    "format": "docker",
+    "image": "example/lambda:latest",
+    "entrypoint": ["node", "index.mjs"]
+  }
+}

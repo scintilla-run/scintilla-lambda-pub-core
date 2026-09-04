@@ -1,0 +1,74 @@
+name: Polyglot lambda core
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: lambda-core-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  contract:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+          cache: npm
+      - run: npm ci --ignore-scripts
+      - run: npm run verify
+
+  native:
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    strategy:
+      fail-fast: false
+      matrix:
+        language: [typescript, rust, go, erlang, gleam]
+    steps:
+      - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - if: matrix.language == 'typescript'
+        uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+      - if: matrix.language == 'go'
+        uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
+        with:
+          go-version: "1.24.x"
+      - if: matrix.language == 'erlang'
+        uses: erlef/setup-beam@8736e9244717f9207464c14c6051b71d22253f60
+        with:
+          otp-version: "29"
+          rebar3-version: "3.27.0"
+      - if: matrix.language == 'gleam'
+        uses: erlef/setup-beam@8736e9244717f9207464c14c6051b71d22253f60
+        with:
+          otp-version: "29"
+          gleam-version: "1.16.0"
+      - if: matrix.language == 'rust'
+        run: rustup toolchain install 1.96.0 --profile minimal --no-self-update
+      - name: Test native target
+        env:
+          LANGUAGE: ${{ matrix.language }}
+        run: |
+          set -euo pipefail
+          case "$LANGUAGE" in
+            typescript) (cd languages/typescript && npm test) ;;
+            rust) (cd languages/rust && cargo +1.96.0 test --locked) ;;
+            go) (cd languages/go && go test ./...) ;;
+            erlang) (cd languages/erlang && rebar3 compile && rebar3 eunit) ;;
+            gleam) (cd languages/gleam && gleam test) ;;
+            *) exit 64 ;;
+          esac

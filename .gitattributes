@@ -1,0 +1,7 @@
+* text=auto eol=lf
+*.json text eol=lf
+*.tsp text eol=lf
+*.gleam text eol=lf
+*.erl text eol=lf
+*.rs text eol=lf
+*.go text eol=lf

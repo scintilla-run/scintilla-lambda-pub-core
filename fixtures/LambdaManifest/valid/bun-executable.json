@@ -1,0 +1,15 @@
+{
+  "apiVersion": "scintilla.run/lambda/v1",
+  "name": "bun-executable-example",
+  "runtime": "bun",
+  "protocol": "stdio-json-v1",
+  "handler": "default",
+  "artifact": {
+    "kind": "executable",
+    "command": "./bin/bun-lambda",
+    "sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "os": "linux",
+    "architecture": "amd64",
+    "args": ["--production"]
+  }
+}

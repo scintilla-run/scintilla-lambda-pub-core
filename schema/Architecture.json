@@ -1,0 +1,7 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scintilla.run/schemas/lambda/v1/Architecture.json",
+  "title": "Executable architecture",
+  "type": "string",
+  "enum": ["amd64", "arm64", "armv7", "riscv64"]
+}

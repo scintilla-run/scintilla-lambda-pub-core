@@ -1,0 +1,8 @@
+{
+  "name": "@scintilla-run/lambda-pub-core-deno",
+  "version": "0.1.0",
+  "description": "Portable Scintilla lambda contracts for Deno",
+  "type": "module",
+  "exports": "./src/index.mjs",
+  "license": "MIT"
+}

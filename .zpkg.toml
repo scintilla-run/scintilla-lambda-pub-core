@@ -1,0 +1,59 @@
+[package]
+org = "scintilla-run"
+name = "scintilla-lambda-pub-core"
+version = "0.1.0"
+description = "Public polyglot SDK and dual-authored contracts for portable Scintilla lambdas"
+license = "MIT"
+keywords = ["lambda", "sdk", "typespec", "json-schema", "oci", "polyglot"]
+
+[package.repository]
+vcs = "git"
+url = "https://github.com/scintilla-run/scintilla-lambda-pub-core"
+
+[publish]
+include_readme = true
+tag_format = "v{version}"
+exclude = [".git/**", ".github/**", ".zpkg.lock", ".zed/**", ".zed-pack/**", "**/node_modules/**", "**/target/**", "**/build/**", "**/_build/**", "**/*.beam", "erl_crash.dump", ".DS_Store"]
+smoke_test = "find \"$ZED_PKG_TEST_TARGET\" -mindepth 1 -maxdepth 1 | grep -q ."
+
+[targets.repository]
+dir = "."
+adapter = "none"
+
+[targets.nodejs]
+dir = "languages/typescript"
+name = "scintilla-lambda-pub-core-nodejs"
+adapter = "node"
+
+[targets.bun]
+dir = "languages/bun"
+name = "scintilla-lambda-pub-core-bun"
+adapter = "node"
+
+[targets.deno]
+dir = "languages/deno"
+name = "scintilla-lambda-pub-core-deno"
+adapter = "none"
+
+[targets.rust]
+dir = "languages/rust"
+name = "scintilla-lambda-pub-core-rust"
+adapter = "rust"
+
+[targets.golang]
+dir = "languages/go"
+name = "scintilla-lambda-pub-core-golang"
+adapter = "go"
+
+[targets.erlang]
+dir = "languages/erlang"
+name = "scintilla-lambda-pub-core-erlang"
+adapter = "none"
+
+[targets.gleam]
+dir = "languages/gleam"
+name = "scintilla-lambda-pub-core-gleam"
+adapter = "none"
+
+[scripts]
+test = "./scripts/verify-all.sh"

@@ -1,0 +1,15 @@
+{
+  "apiVersion": "scintilla.run/lambda/v1",
+  "name": "nodejs-docker-example",
+  "runtime": "nodejs",
+  "runtimeVersion": "22",
+  "protocol": "stdio-json-v1",
+  "handler": "index.handler",
+  "artifact": {
+    "kind": "container",
+    "format": "docker",
+    "image": "ghcr.io/example/node-lambda",
+    "digest": "sha256:aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "entrypoint": ["node", "dist/index.mjs"]
+  }
+}

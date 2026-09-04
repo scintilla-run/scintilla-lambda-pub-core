@@ -1,0 +1,23 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scintilla.run/schemas/lambda/v1/LambdaManifest.json",
+  "title": "Scintilla portable lambda manifest",
+  "description": "A runtime-neutral, immutable launch contract for a container image or bare executable.",
+  "type": "object",
+  "properties": {
+    "apiVersion": {"type": "string", "const": "scintilla.run/lambda/v1"},
+    "name": {"type": "string", "pattern": "^[a-z][a-z0-9-]{0,62}$"},
+    "runtime": {"$ref": "Runtime.json"},
+    "protocol": {"$ref": "InvocationProtocol.json"},
+    "handler": {"type": "string", "minLength": 1, "maxLength": 64},
+    "runtimeVersion": {"type": "string", "minLength": 1, "maxLength": 64},
+    "artifact": {
+      "anyOf": [
+        {"$ref": "ContainerArtifact.json"},
+        {"$ref": "ExecutableArtifact.json"}
+      ]
+    }
+  },
+  "required": ["apiVersion", "name", "runtime", "protocol", "handler", "artifact"],
+  "unevaluatedProperties": {"not": {}}
+}

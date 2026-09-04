@@ -1,0 +1,17 @@
+{
+  "name": "@scintilla-run/lambda-pub-core-bun",
+  "version": "0.1.0",
+  "description": "Portable Scintilla lambda contracts for Bun",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.mjs"
+    }
+  },
+  "files": [
+    "src",
+    "README.md"
+  ],
+  "license": "MIT"
+}

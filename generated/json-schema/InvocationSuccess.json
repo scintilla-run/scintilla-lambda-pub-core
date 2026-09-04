@@ -1,0 +1,19 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "InvocationSuccess.json",
+    "type": "object",
+    "properties": {
+        "status": {
+            "type": "string",
+            "const": "ok"
+        },
+        "payload": {}
+    },
+    "required": [
+        "status",
+        "payload"
+    ],
+    "unevaluatedProperties": {
+        "not": {}
+    }
+}

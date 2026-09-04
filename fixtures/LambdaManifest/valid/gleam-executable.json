@@ -1,0 +1,14 @@
+{
+  "apiVersion": "scintilla.run/lambda/v1",
+  "name": "gleam-executable-example",
+  "runtime": "gleam",
+  "protocol": "stdio-json-v1",
+  "handler": "lambda_handler.main",
+  "artifact": {
+    "kind": "executable",
+    "command": "./bin/gleam-lambda",
+    "sha256": "ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff",
+    "os": "linux",
+    "architecture": "amd64"
+  }
+}

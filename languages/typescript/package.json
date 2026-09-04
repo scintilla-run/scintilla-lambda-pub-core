@@ -1,0 +1,20 @@
+{
+  "name": "@scintilla-run/lambda-pub-core",
+  "version": "0.1.0",
+  "description": "Portable Scintilla lambda contracts for Node.js, Bun, and Deno",
+  "type": "module",
+  "exports": {
+    ".": {
+      "types": "./src/index.d.ts",
+      "import": "./src/index.mjs"
+    }
+  },
+  "files": ["src", "README.md"],
+  "scripts": {
+    "test": "node --test test/*.test.mjs"
+  },
+  "license": "MIT",
+  "engines": {
+    "node": ">=20"
+  }
+}

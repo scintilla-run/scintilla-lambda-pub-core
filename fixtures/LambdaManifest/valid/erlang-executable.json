@@ -1,0 +1,14 @@
+{
+  "apiVersion": "scintilla.run/lambda/v1",
+  "name": "erlang-executable-example",
+  "runtime": "erlang",
+  "protocol": "stdio-json-v1",
+  "handler": "lambda_handler:handle",
+  "artifact": {
+    "kind": "executable",
+    "command": "./bin/erlang-lambda",
+    "sha256": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "os": "linux",
+    "architecture": "arm64"
+  }
+}

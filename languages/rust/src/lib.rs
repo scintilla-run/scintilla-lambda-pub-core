@@ -1,0 +1,314 @@
+use serde::{Deserialize, Serialize};
+
+pub const API_VERSION: &str = "scintilla.run/lambda/v1";
+pub const INVOCATION_PROTOCOL: &str = "stdio-json-v1";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Runtime {
+    Nodejs,
+    Bun,
+    Deno,
+    Rust,
+    Erlang,
+    Gleam,
+    Golang,
+    Binary,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ContainerFormat {
+    Docker,
+    Oci,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum OperatingSystem {
+    Linux,
+    Darwin,
+    Windows,
+    Freebsd,
+}
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum Architecture {
+    Amd64,
+    Arm64,
+    Armv7,
+    Riscv64,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(tag = "kind", rename_all = "lowercase", deny_unknown_fields)]
+pub enum Artifact {
+    Container {
+        format: ContainerFormat,
+        image: String,
+        digest: String,
+        entrypoint: Vec<String>,
+    },
+    Executable {
+        command: String,
+        sha256: String,
+        os: OperatingSystem,
+        architecture: Architecture,
+        #[serde(default, skip_serializing_if = "Vec::is_empty")]
+        args: Vec<String>,
+    },
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct LambdaManifest {
+    pub api_version: String,
+    pub name: String,
+    pub runtime: Runtime,
+    pub protocol: String,
+    pub handler: String,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub runtime_version: Option<String>,
+    pub artifact: Artifact,
+}
+
+impl LambdaManifest {
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        if self.api_version != API_VERSION {
+            return Err(ValidationError::new(
+                "apiVersion",
+                "unsupported API version",
+            ));
+        }
+        if !valid_name(&self.name) {
+            return Err(ValidationError::new("name", "invalid lambda name"));
+        }
+        if self.protocol != INVOCATION_PROTOCOL {
+            return Err(ValidationError::new(
+                "protocol",
+                "unsupported invocation protocol",
+            ));
+        }
+        if self.handler.is_empty() || self.handler.len() > 64 {
+            return Err(ValidationError::new(
+                "handler",
+                "handler must contain 1 to 64 bytes",
+            ));
+        }
+        if self
+            .runtime_version
+            .as_ref()
+            .is_some_and(|version| version.is_empty() || version.len() > 64)
+        {
+            return Err(ValidationError::new(
+                "runtimeVersion",
+                "runtime version must contain 1 to 64 bytes",
+            ));
+        }
+
+        match &self.artifact {
+            Artifact::Container {
+                image,
+                digest,
+                entrypoint,
+                ..
+            } => {
+                if !valid_image(image) {
+                    return Err(ValidationError::new(
+                        "artifact.image",
+                        "container image must contain 1 to 512 bytes",
+                    ));
+                }
+                if !digest.starts_with("sha256:") || !valid_sha256(&digest[7..]) {
+                    return Err(ValidationError::new(
+                        "artifact.digest",
+                        "container image must be SHA-256 pinned",
+                    ));
+                }
+                if entrypoint.is_empty() || entrypoint.len() > 64 {
+                    return Err(ValidationError::new(
+                        "artifact.entrypoint",
+                        "entrypoint must contain 1 to 64 argv values",
+                    ));
+                }
+                if !entrypoint.iter().all(|argument| valid_argument(argument)) {
+                    return Err(ValidationError::new(
+                        "artifact.entrypoint",
+                        "entrypoint values must contain 1 to 1024 bytes",
+                    ));
+                }
+            }
+            Artifact::Executable {
+                command,
+                sha256,
+                args,
+                ..
+            } => {
+                if !valid_command(command) {
+                    return Err(ValidationError::new(
+                        "artifact.command",
+                        "command must be an absolute or ./ path without shell text",
+                    ));
+                }
+                if !valid_sha256(sha256) {
+                    return Err(ValidationError::new(
+                        "artifact.sha256",
+                        "executable checksum must be lowercase SHA-256",
+                    ));
+                }
+                if args.len() > 64 {
+                    return Err(ValidationError::new(
+                        "artifact.args",
+                        "args must contain at most 64 values",
+                    ));
+                }
+                if !args.iter().all(|argument| valid_argument(argument)) {
+                    return Err(ValidationError::new(
+                        "artifact.args",
+                        "argument values must contain 1 to 1024 bytes",
+                    ));
+                }
+            }
+        }
+        Ok(())
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct ValidationError {
+    pub path: &'static str,
+    pub message: &'static str,
+}
+
+impl ValidationError {
+    const fn new(path: &'static str, message: &'static str) -> Self {
+        Self { path, message }
+    }
+}
+
+impl std::fmt::Display for ValidationError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "{}: {}", self.path, self.message)
+    }
+}
+
+impl std::error::Error for ValidationError {}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct InvocationRequest<T = serde_json::Value> {
+    pub protocol: String,
+    pub invocation_id: String,
+    pub timeout_ms: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub traceparent: Option<String>,
+    pub payload: T,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct InvocationError {
+    pub code: String,
+    pub message: String,
+    pub retryable: bool,
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(tag = "status", rename_all = "lowercase")]
+pub enum InvocationResult<T = serde_json::Value> {
+    Ok { payload: T },
+    Error { error: InvocationError },
+}
+
+#[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct InvocationResponse<T = serde_json::Value> {
+    pub protocol: String,
+    pub invocation_id: String,
+    pub result: InvocationResult<T>,
+}
+
+fn valid_name(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    !bytes.is_empty()
+        && bytes.len() <= 63
+        && bytes[0].is_ascii_lowercase()
+        && bytes
+            .iter()
+            .all(|byte| byte.is_ascii_lowercase() || byte.is_ascii_digit() || *byte == b'-')
+}
+
+fn valid_sha256(value: &str) -> bool {
+    value.len() == 64
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_digit() || (b'a'..=b'f').contains(&byte))
+}
+
+fn valid_image(value: &str) -> bool {
+    !value.is_empty()
+        && value.len() <= 512
+        && value.bytes().enumerate().all(|(index, byte)| {
+            byte.is_ascii_alphanumeric() || (index > 0 && b"._:/@-".contains(&byte))
+        })
+}
+
+fn valid_argument(value: &str) -> bool {
+    !value.is_empty() && value.len() <= 1024
+}
+
+fn valid_command(value: &str) -> bool {
+    (value.starts_with('/') || value.starts_with("./"))
+        && value
+            .bytes()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"._/+-".contains(&byte))
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    fn binary_manifest() -> LambdaManifest {
+        LambdaManifest {
+            api_version: API_VERSION.into(),
+            name: "example-lambda".into(),
+            runtime: Runtime::Binary,
+            protocol: INVOCATION_PROTOCOL.into(),
+            handler: "main".into(),
+            runtime_version: None,
+            artifact: Artifact::Executable {
+                command: "./bin/lambda".into(),
+                sha256: "a".repeat(64),
+                os: OperatingSystem::Linux,
+                architecture: Architecture::Amd64,
+                args: vec![],
+            },
+        }
+    }
+
+    #[test]
+    fn accepts_immutable_bare_executable() {
+        assert_eq!(binary_manifest().validate(), Ok(()));
+    }
+
+    #[test]
+    fn rejects_shell_command() {
+        let mut manifest = binary_manifest();
+        if let Artifact::Executable { command, .. } = &mut manifest.artifact {
+            *command = "sh -c ./lambda".into();
+        }
+        assert_eq!(manifest.validate().unwrap_err().path, "artifact.command");
+    }
+
+    #[test]
+    fn invocation_result_is_discriminated() {
+        let response = InvocationResponse {
+            protocol: INVOCATION_PROTOCOL.into(),
+            invocation_id: "id-1".into(),
+            result: InvocationResult::Ok { payload: 42 },
+        };
+        let value = serde_json::to_value(response).unwrap();
+        assert_eq!(value["result"]["status"], "ok");
+    }
+}
