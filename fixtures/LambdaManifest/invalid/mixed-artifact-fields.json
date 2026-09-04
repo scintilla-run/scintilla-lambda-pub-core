@@ -1,0 +1,15 @@
+{
+  "apiVersion": "scintilla.run/lambda/v1",
+  "name": "mixed-artifact-fields",
+  "runtime": "golang",
+  "protocol": "stdio-json-v1",
+  "handler": "main",
+  "artifact": {
+    "kind": "executable",
+    "command": "./lambda",
+    "sha256": "7777777777777777777777777777777777777777777777777777777777777777",
+    "os": "linux",
+    "architecture": "amd64",
+    "image": "unexpected"
+  }
+}

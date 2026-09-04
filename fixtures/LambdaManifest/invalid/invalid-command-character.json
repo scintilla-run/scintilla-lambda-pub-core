@@ -1,0 +1,14 @@
+{
+  "apiVersion": "scintilla.run/lambda/v1",
+  "name": "invalid-command-character",
+  "runtime": "gleam",
+  "protocol": "stdio-json-v1",
+  "handler": "main",
+  "artifact": {
+    "kind": "executable",
+    "command": "./lambda$HOME",
+    "sha256": "6666666666666666666666666666666666666666666666666666666666666666",
+    "os": "linux",
+    "architecture": "amd64"
+  }
+}

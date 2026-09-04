@@ -1,0 +1,8 @@
+{
+  "protocol": "stdio-json-v1",
+  "invocationId": "request-01",
+  "result": {
+    "status": "error",
+    "error": {"code": "dependency.unavailable", "message": "", "retryable": true}
+  }
+}

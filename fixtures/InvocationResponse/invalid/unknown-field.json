@@ -1,0 +1,6 @@
+{
+  "protocol": "stdio-json-v1",
+  "invocationId": "request-01",
+  "result": {"status": "ok", "payload": 42},
+  "debug": true
+}

@@ -90,20 +90,20 @@ impl LambdaManifest {
                 "unsupported invocation protocol",
             ));
         }
-        if self.handler.is_empty() || self.handler.len() > 64 {
+        if !valid_bounded_string(&self.handler, 1, 64) {
             return Err(ValidationError::new(
                 "handler",
-                "handler must contain 1 to 64 bytes",
+                "handler must contain 1 to 64 characters",
             ));
         }
         if self
             .runtime_version
             .as_ref()
-            .is_some_and(|version| version.is_empty() || version.len() > 64)
+            .is_some_and(|version| !valid_bounded_string(version, 1, 64))
         {
             return Err(ValidationError::new(
                 "runtimeVersion",
-                "runtime version must contain 1 to 64 bytes",
+                "runtime version must contain 1 to 64 characters",
             ));
         }
 
@@ -135,7 +135,7 @@ impl LambdaManifest {
                 if !entrypoint.iter().all(|argument| valid_argument(argument)) {
                     return Err(ValidationError::new(
                         "artifact.entrypoint",
-                        "entrypoint values must contain 1 to 1024 bytes",
+                        "entrypoint values must contain 1 to 1024 characters",
                     ));
                 }
             }
@@ -166,7 +166,7 @@ impl LambdaManifest {
                 if !args.iter().all(|argument| valid_argument(argument)) {
                     return Err(ValidationError::new(
                         "artifact.args",
-                        "argument values must contain 1 to 1024 bytes",
+                        "argument values must contain 1 to 1024 characters",
                     ));
                 }
             }
@@ -215,7 +215,7 @@ pub struct InvocationError {
 }
 
 #[derive(Debug, Clone, PartialEq, Serialize, Deserialize)]
-#[serde(tag = "status", rename_all = "lowercase")]
+#[serde(tag = "status", rename_all = "lowercase", deny_unknown_fields)]
 pub enum InvocationResult<T = serde_json::Value> {
     Ok { payload: T },
     Error { error: InvocationError },
@@ -255,7 +255,12 @@ fn valid_image(value: &str) -> bool {
 }
 
 fn valid_argument(value: &str) -> bool {
-    !value.is_empty() && value.len() <= 1024
+    valid_bounded_string(value, 1, 1024)
+}
+
+fn valid_bounded_string(value: &str, minimum: usize, maximum: usize) -> bool {
+    let length = value.chars().count();
+    length >= minimum && length <= maximum
 }
 
 fn valid_command(value: &str) -> bool {
@@ -268,6 +273,8 @@ fn valid_command(value: &str) -> bool {
 #[cfg(test)]
 mod tests {
     use super::*;
+    use std::fs;
+    use std::path::Path;
 
     fn binary_manifest() -> LambdaManifest {
         LambdaManifest {
@@ -299,6 +306,53 @@ mod tests {
             *command = "sh -c ./lambda".into();
         }
         assert_eq!(manifest.validate().unwrap_err().path, "artifact.command");
+    }
+
+    #[test]
+    fn string_bounds_count_unicode_characters() {
+        let mut manifest = binary_manifest();
+        manifest.handler = "🚀".repeat(64);
+        if let Artifact::Executable { args, .. } = &mut manifest.artifact {
+            args.push("🚀".repeat(1024));
+        }
+        assert_eq!(manifest.validate(), Ok(()));
+
+        manifest.handler.push('🚀');
+        assert_eq!(manifest.validate().unwrap_err().path, "handler");
+    }
+
+    #[test]
+    fn rejects_mixed_invocation_results() {
+        let mixed = r#"{
+            "protocol":"stdio-json-v1",
+            "invocationId":"id-1",
+            "result":{"status":"ok","payload":42,"error":{"code":"unexpected","message":"mixed","retryable":false}}
+        }"#;
+        assert!(serde_json::from_str::<InvocationResponse>(mixed).is_err());
+    }
+
+    #[test]
+    fn classifies_the_shared_manifest_fixture_corpus() {
+        let fixtures = Path::new(env!("CARGO_MANIFEST_DIR"))
+            .join("../..")
+            .join("fixtures/LambdaManifest");
+        for (directory, expected) in [("valid", true), ("invalid", false)] {
+            for entry in fs::read_dir(fixtures.join(directory)).unwrap() {
+                let path = entry.unwrap().path();
+                if path.extension().and_then(|value| value.to_str()) != Some("json") {
+                    continue;
+                }
+                let classified_valid =
+                    serde_json::from_slice::<LambdaManifest>(&fs::read(&path).unwrap())
+                        .is_ok_and(|manifest| manifest.validate().is_ok());
+                assert_eq!(
+                    classified_valid,
+                    expected,
+                    "unexpected fixture classification: {}",
+                    path.display()
+                );
+            }
+        }
     }
 
     #[test]

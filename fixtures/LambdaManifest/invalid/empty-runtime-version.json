@@ -1,0 +1,15 @@
+{
+  "apiVersion": "scintilla.run/lambda/v1",
+  "name": "empty-runtime-version",
+  "runtime": "binary",
+  "protocol": "stdio-json-v1",
+  "handler": "main",
+  "runtimeVersion": "",
+  "artifact": {
+    "kind": "executable",
+    "command": "./lambda",
+    "sha256": "5555555555555555555555555555555555555555555555555555555555555555",
+    "os": "linux",
+    "architecture": "amd64"
+  }
+}

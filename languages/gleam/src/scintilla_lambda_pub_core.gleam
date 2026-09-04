@@ -195,10 +195,15 @@ fn valid_sha256(value: String) -> Bool {
 }
 
 fn valid_command(value: String) -> Bool {
-  { string.starts_with(value, "/") || string.starts_with(value, "./") }
-  && !string.contains(value, " ")
-  && !string.contains(value, "\t")
-  && !string.contains(value, ";")
-  && !string.contains(value, "|")
-  && !string.contains(value, "&")
+  let allowed =
+    "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789._/+-"
+  case string.to_graphemes(value) {
+    [".", "/", first, ..rest] ->
+      string.contains(allowed, first)
+      && list.all(rest, fn(part) { string.contains(allowed, part) })
+    ["/", first, ..rest] ->
+      string.contains(allowed, first)
+      && list.all(rest, fn(part) { string.contains(allowed, part) })
+    _ -> False
+  }
 }

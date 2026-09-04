@@ -1,0 +1,14 @@
+{
+  "apiVersion": "scintilla.run/lambda/v1",
+  "name": "uppercase-digest",
+  "runtime": "nodejs",
+  "protocol": "stdio-json-v1",
+  "handler": "main",
+  "artifact": {
+    "kind": "container",
+    "format": "docker",
+    "image": "ghcr.io/example/lambda",
+    "digest": "sha256:AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+    "entrypoint": ["node", "index.mjs"]
+  }
+}

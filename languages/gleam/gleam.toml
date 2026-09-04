@@ -1,5 +1,5 @@
 name = "scintilla_lambda_pub_core"
-version = "0.1.1"
+version = "0.1.2"
 target = "erlang"
 description = "Portable Scintilla lambda artifact and invocation contracts"
 repository = { type = "github", user = "scintilla-run", repo = "scintilla-lambda-pub-core" }
