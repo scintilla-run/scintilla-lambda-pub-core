@@ -1,7 +1,7 @@
 [package]
 org = "scintilla-run"
 name = "scintilla-lambda-pub-core"
-version = "0.1.0"
+version = "0.1.1"
 description = "Public polyglot SDK and dual-authored contracts for portable Scintilla lambdas"
 license = "MIT"
 keywords = ["lambda", "sdk", "typespec", "json-schema", "oci", "polyglot"]
@@ -14,7 +14,7 @@ url = "https://github.com/scintilla-run/scintilla-lambda-pub-core"
 include_readme = true
 tag_format = "v{version}"
 exclude = [".git/**", ".github/**", ".zpkg.lock", ".zed/**", ".zed-pack/**", "**/node_modules/**", "**/target/**", "**/build/**", "**/_build/**", "**/*.beam", "erl_crash.dump", ".DS_Store"]
-smoke_test = "find \"$ZED_PKG_TEST_TARGET\" -mindepth 1 -maxdepth 1 | grep -q ."
+smoke_test = "test -f \"$ZED_PKG_TEST_TARGET/schema/LambdaManifest.json\" && test -f \"$ZED_PKG_TEST_TARGET/typespec/main.tsp\""
 
 [targets.repository]
 dir = "."

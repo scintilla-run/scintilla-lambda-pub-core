@@ -37,7 +37,7 @@ targets for Node.js/Bun/Deno, Rust, Go, Erlang, and Gleam.
 
 ```toml
 [dependencies]
-"scintilla-run/scintilla-lambda-pub-core" = "^0.1.0"
+"scintilla-run/scintilla-lambda-pub-core" = "^0.1.1"
 ```
 
 Install the full repository contract when an importer needs TypeSpec and JSON

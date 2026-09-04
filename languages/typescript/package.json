@@ -1,6 +1,6 @@
 {
   "name": "@scintilla-run/lambda-pub-core",
-  "version": "0.1.0",
+  "version": "0.1.1",
   "description": "Portable Scintilla lambda contracts for Node.js, Bun, and Deno",
   "type": "module",
   "exports": {
