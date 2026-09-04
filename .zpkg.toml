@@ -1,7 +1,7 @@
 [package]
 org = "scintilla-run"
 name = "scintilla-lambda-pub-core"
-version = "0.1.1"
+version = "0.1.2"
 description = "Public polyglot SDK and dual-authored contracts for portable Scintilla lambdas"
 license = "MIT"
 keywords = ["lambda", "sdk", "typespec", "json-schema", "oci", "polyglot"]

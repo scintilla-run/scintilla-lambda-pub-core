@@ -1,0 +1,7 @@
+{
+  "protocol": "stdio-json-v1",
+  "invocationId": "request-03",
+  "timeoutMs": 30000,
+  "payload": null,
+  "environment": {"SECRET": "must-not-pass"}
+}

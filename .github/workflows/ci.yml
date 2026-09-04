@@ -34,7 +34,7 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        language: [typescript, rust, go, erlang, gleam]
+        language: [typescript, bun, deno, rust, go, erlang, gleam]
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -43,6 +43,14 @@ jobs:
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: "22"
+      - if: matrix.language == 'bun'
+        uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
+        with:
+          bun-version: "1.4.1"
+      - if: matrix.language == 'deno'
+        uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed
+        with:
+          deno-version: "2.9.6"
       - if: matrix.language == 'go'
         uses: actions/setup-go@924ae3a1cded613372ab5595356fb5720e22ba16
         with:
@@ -58,7 +66,7 @@ jobs:
           otp-version: "29"
           gleam-version: "1.16.0"
       - if: matrix.language == 'rust'
-        run: rustup toolchain install 1.96.0 --profile minimal --no-self-update
+        run: rustup toolchain install 1.96.0 --profile minimal --component clippy,rustfmt --no-self-update
       - name: Test native target
         env:
           LANGUAGE: ${{ matrix.language }}
@@ -66,9 +74,11 @@ jobs:
           set -euo pipefail
           case "$LANGUAGE" in
             typescript) (cd languages/typescript && npm test) ;;
-            rust) (cd languages/rust && cargo +1.96.0 test --locked) ;;
-            go) (cd languages/go && go test ./...) ;;
+            bun) (cd languages/bun && bun test) ;;
+            deno) (cd languages/deno && deno test) ;;
+            rust) (cd languages/rust && cargo +1.96.0 fmt --check && cargo +1.96.0 clippy --all-targets --locked -- -D warnings && cargo +1.96.0 test --locked) ;;
+            go) (cd languages/go && test -z "$(gofmt -d .)" && go vet ./... && go test -race -cover ./...) ;;
             erlang) (cd languages/erlang && rebar3 compile && rebar3 eunit) ;;
-            gleam) (cd languages/gleam && gleam test) ;;
+            gleam) (cd languages/gleam && gleam format --check src test && gleam test) ;;
             *) exit 64 ;;
           esac

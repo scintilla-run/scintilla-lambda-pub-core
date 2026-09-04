@@ -19,8 +19,9 @@ const COMMAND = /^(\.\/|\/)[A-Za-z0-9._/+-]+$/;
 const NAME = /^[a-z][a-z0-9-]{0,62}$/;
 
 const isRecord = (value) => value !== null && typeof value === "object" && !Array.isArray(value);
+const stringLength = (value) => [...value].length;
 const isStringArray = (value, minimum = 0) =>
-  Array.isArray(value) && value.length >= minimum && value.length <= 64 && value.every((item) => typeof item === "string" && item.length >= 1 && item.length <= 1024);
+  Array.isArray(value) && value.length >= minimum && value.length <= 64 && value.every((item) => typeof item === "string" && stringLength(item) >= 1 && stringLength(item) <= 1024);
 
 export function validateLambdaManifest(value) {
   const issues = [];
@@ -34,8 +35,8 @@ export function validateLambdaManifest(value) {
   if (typeof value.name !== "string" || !NAME.test(value.name)) issues.push("name is invalid");
   if (!RUNTIMES.includes(value.runtime)) issues.push("runtime is unsupported");
   if (value.protocol !== INVOCATION_PROTOCOL) issues.push(`protocol must be ${INVOCATION_PROTOCOL}`);
-  if (typeof value.handler !== "string" || value.handler.length < 1 || value.handler.length > 64) issues.push("handler is invalid");
-  if (value.runtimeVersion !== undefined && (typeof value.runtimeVersion !== "string" || value.runtimeVersion.length < 1 || value.runtimeVersion.length > 64)) issues.push("runtimeVersion is invalid");
+  if (typeof value.handler !== "string" || stringLength(value.handler) < 1 || stringLength(value.handler) > 64) issues.push("handler is invalid");
+  if (value.runtimeVersion !== undefined && (typeof value.runtimeVersion !== "string" || stringLength(value.runtimeVersion) < 1 || stringLength(value.runtimeVersion) > 64)) issues.push("runtimeVersion is invalid");
 
   if (!isRecord(value.artifact)) {
     issues.push("artifact must be an object");

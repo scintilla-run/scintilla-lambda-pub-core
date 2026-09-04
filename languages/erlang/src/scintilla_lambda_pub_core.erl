@@ -74,8 +74,13 @@ valid_name(_) ->
     false.
 
 valid_bounded_binary(Value, Minimum, Maximum) when is_binary(Value) ->
-    Size = byte_size(Value),
-    Size >= Minimum andalso Size =< Maximum;
+    case unicode:characters_to_list(Value, utf8) of
+        Characters when is_list(Characters) ->
+            Length = length(Characters),
+            Length >= Minimum andalso Length =< Maximum;
+        _ ->
+            false
+    end;
 valid_bounded_binary(_, _, _) ->
     false.
 
