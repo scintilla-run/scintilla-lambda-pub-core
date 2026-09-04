@@ -10,7 +10,7 @@ const targets = [
     directory: "bun",
     package: {
       name: "@scintilla-run/lambda-pub-core-bun",
-      version: "0.1.0",
+      version: "0.1.1",
       description: "Portable Scintilla lambda contracts for Bun",
       type: "module",
       exports: { ".": { types: "./src/index.d.ts", import: "./src/index.mjs" } },
@@ -22,7 +22,7 @@ const targets = [
     directory: "deno",
     package: {
       name: "@scintilla-run/lambda-pub-core-deno",
-      version: "0.1.0",
+      version: "0.1.1",
       description: "Portable Scintilla lambda contracts for Deno",
       type: "module",
       exports: "./src/index.mjs",
