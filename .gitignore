@@ -8,3 +8,7 @@ _build/
 *.beam
 erl_crash.dump
 .DS_Store
+
+# Local temporary directories and Git worktrees (DEN-3956).
+tmp/
+temp/
