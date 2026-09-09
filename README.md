@@ -34,8 +34,7 @@ Hosted admission additionally pins
 [`ORESoftware/typespec-json-schema-validator`](https://github.com/ORESoftware/typespec-json-schema-validator)
 to an immutable reviewed commit. TJSV emits the parity receipt and Contract IR,
 then independently rebuilds verification from the exact current TypeSpec,
-generated comparison witness, authored JSON Schema closure, and complete
-fourteen-declaration consumer scope. Its consumer regression action must reject
+generated comparison witness, authored JSON Schema closure, and complete fifteen-declaration consumer scope. Its consumer regression action must reject
 altered digests, stale evidence, tampered IR, and incomplete scope.
 
 ## Cross-language and runtime evidence

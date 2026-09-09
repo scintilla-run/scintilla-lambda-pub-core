@@ -70,13 +70,16 @@
       "typespec": "Scintilla.Lambda.V1.Runtime",
       "generated": "Runtime",
       "authored": "Runtime"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.SchemaCatalog",
+      "generated": "SchemaCatalog",
+      "authored": "SchemaCatalog"
     }
   ],
   "ignore": {
     "typespec": [],
     "generated": [],
-    "authored": [
-      "Scintilla lambda public core schema catalog"
-    ]
+    "authored": []
   }
 }

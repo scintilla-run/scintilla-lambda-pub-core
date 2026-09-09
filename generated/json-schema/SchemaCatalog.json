@@ -1,0 +1,15 @@
+{
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "$id": "SchemaCatalog.json",
+    "anyOf": [
+        {
+            "$ref": "LambdaManifest.json"
+        },
+        {
+            "$ref": "InvocationRequest.json"
+        },
+        {
+            "$ref": "InvocationResponse.json"
+        }
+    ]
+}

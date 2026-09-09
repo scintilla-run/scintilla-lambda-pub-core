@@ -1,10 +1,17 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scintilla.run/schemas/lambda/v1/index.json",
-  "title": "Scintilla lambda public core schema catalog",
-  "oneOf": [
-    {"$ref": "LambdaManifest.json"},
-    {"$ref": "InvocationRequest.json"},
-    {"$ref": "InvocationResponse.json"}
+  "title": "SchemaCatalog",
+  "description": "Scintilla lambda public core schema catalog and compatibility entry point.",
+  "anyOf": [
+    {
+      "$ref": "LambdaManifest.json"
+    },
+    {
+      "$ref": "InvocationRequest.json"
+    },
+    {
+      "$ref": "InvocationResponse.json"
+    }
   ]
 }
