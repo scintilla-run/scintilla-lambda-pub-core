@@ -37,6 +37,7 @@ jobs:
         with:
           typespec: typespec/main.tsp
           schema: schema
+          mapping: config/tjsv-declaration-mapping.json
           instances: fixtures
           report: .typespec-json-schema-validator/positive/report.json
           sarif: .typespec-json-schema-validator/positive/report.sarif
@@ -74,7 +75,7 @@ jobs:
 
           const path = 'tmp/tjsv-negative/schema/Runtime.json';
           const schema = JSON.parse(await readFile(path, 'utf8'));
-          schema.enum = schema.enum.filter((value) => value !== 'generic-binary');
+          schema.enum = schema.enum.filter((value) => value !== 'binary');
           await writeFile(path, `${JSON.stringify(schema, null, 2)}\n`);
           NODE
       - name: Prove TJSV fails closed on peer-authority drift
@@ -84,6 +85,7 @@ jobs:
         with:
           typespec: typespec/main.tsp
           schema: tmp/tjsv-negative/schema
+          mapping: config/tjsv-declaration-mapping.json
           instances: fixtures
           report: .typespec-json-schema-validator/negative/report.json
           sarif: .typespec-json-schema-validator/negative/report.sarif
@@ -117,6 +119,7 @@ jobs:
           name: lambda-peer-authority-evidence
           path: .typespec-json-schema-validator/
           if-no-files-found: error
+          include-hidden-files: true
           retention-days: 30
 
   native:
