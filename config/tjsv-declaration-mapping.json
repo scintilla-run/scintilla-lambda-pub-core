@@ -1,0 +1,81 @@
+{
+  "schema": "ores.typespec-json-schema-validator.mapping/v1",
+  "declarations": [
+    {
+      "typespec": "Scintilla.Lambda.V1.Runtime",
+      "generated": "Runtime",
+      "authored": "Lambda runtime"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.ContainerFormat",
+      "generated": "ContainerFormat",
+      "authored": "Container image format"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.OperatingSystem",
+      "generated": "OperatingSystem",
+      "authored": "Executable operating system"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.Architecture",
+      "generated": "Architecture",
+      "authored": "Executable architecture"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.InvocationProtocol",
+      "generated": "InvocationProtocol",
+      "authored": "Invocation protocol"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.ContainerArtifact",
+      "generated": "ContainerArtifact",
+      "authored": "Immutable container artifact"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.ExecutableArtifact",
+      "generated": "ExecutableArtifact",
+      "authored": "Immutable bare executable artifact"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.LambdaManifest",
+      "generated": "LambdaManifest",
+      "authored": "Scintilla portable lambda manifest"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.InvocationRequest",
+      "generated": "InvocationRequest",
+      "authored": "Scintilla stdio invocation request"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.InvocationError",
+      "generated": "InvocationError",
+      "authored": "Portable invocation failure"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.InvocationSuccess",
+      "generated": "InvocationSuccess",
+      "authored": "Successful invocation result"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.InvocationFailure",
+      "generated": "InvocationFailure",
+      "authored": "Failed invocation result"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.InvocationResponse",
+      "generated": "InvocationResponse",
+      "authored": "Scintilla stdio invocation response"
+    }
+  ],
+  "ignore": {
+    "typespec": [
+      "Scintilla.Lambda.V1.LaunchArgument"
+    ],
+    "generated": [
+      "LaunchArgument"
+    ],
+    "authored": [
+      "Scintilla lambda public core schema catalog"
+    ]
+  }
+}
