@@ -1,6 +1,6 @@
 import assert from "node:assert/strict";
 import { cp, mkdir, readFile, rm, writeFile } from "node:fs/promises";
-import { dirname, join, resolve } from "node:path";
+import { dirname, isAbsolute, join, relative, resolve, sep } from "node:path";
 import { pathToFileURL } from "node:url";
 
 const root = resolve(import.meta.dirname, "..");
@@ -12,7 +12,7 @@ const manifestPath = fromRoot(
 );
 const evidenceRoot = fromRoot(
   process.env.LANGUAGE_BOUNDARY_EVIDENCE_DIR,
-  ".runtime-artifacts/runtime-evidence",
+  ".runtime-artifacts",
 );
 const reportPath = fromRoot(
   process.env.TJSV_PARITY_REPORT,
@@ -51,9 +51,38 @@ await mkdir(outputRoot, { recursive: true });
 const manifest = await readJson(manifestPath);
 const report = await readJson(reportPath);
 const contractIr = await readJson(contractIrPath);
+
+// The workflow historically supplied the runtime-evidence subdirectory while
+// manifest paths are rooted at the merged runtime-artifact directory. Accept
+// either root spelling, then enforce that every resolved file remains inside it.
+const manifestEvidenceRoot =
+  evidenceRoot.endsWith(`${sep}runtime-evidence`) &&
+  manifest.targets.every(
+    (target) =>
+      typeof target.evidence === "string" &&
+      target.evidence.startsWith("runtime-evidence/"),
+  )
+    ? dirname(evidenceRoot)
+    : evidenceRoot;
+
+function resolveEvidencePath(manifestRelativePath) {
+  assert.equal(typeof manifestRelativePath, "string");
+  assert.ok(manifestRelativePath.length > 0);
+  const absolute = resolve(manifestEvidenceRoot, manifestRelativePath);
+  const withinRoot = relative(manifestEvidenceRoot, absolute);
+  assert.ok(
+    withinRoot.length > 0 &&
+      withinRoot !== ".." &&
+      !withinRoot.startsWith(`..${sep}`) &&
+      !isAbsolute(withinRoot),
+    `runtime evidence path escapes the configured artifact root: ${manifestRelativePath}`,
+  );
+  return absolute;
+}
+
 const evidenceByPath = new Map();
 for (const target of manifest.targets) {
-  const evidence = await readJson(join(evidenceRoot, target.evidence));
+  const evidence = await readJson(resolveEvidencePath(target.evidence));
   evidenceByPath.set(target.evidence, evidence);
 }
 
@@ -154,7 +183,10 @@ assert.ok(
 );
 const staleText = JSON.stringify(staleAuthority);
 assert.doesNotMatch(staleText, /do-not-leak-language-boundary-stale-marker/u);
-assert.doesNotMatch(staleText, new RegExp(process.cwd().replaceAll("\\", "\\\\"), "u"));
+assert.doesNotMatch(
+  staleText,
+  new RegExp(process.cwd().replaceAll("\\", "\\\\"), "u"),
+);
 
 const expectedFiles = [
   "positive.json",
