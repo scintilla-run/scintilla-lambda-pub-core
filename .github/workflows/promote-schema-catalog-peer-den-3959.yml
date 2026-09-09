@@ -109,11 +109,12 @@ jobs:
 
           const readmePath = 'README.md';
           let readme = await readFile(readmePath, 'utf8');
-          if (!readme.includes('complete fourteen-declaration consumer scope')) {
+          const declarationWording = /complete\s+fourteen-declaration consumer scope/u;
+          if (!declarationWording.test(readme)) {
             throw new Error('README declaration count wording changed');
           }
           readme = readme.replace(
-            'complete fourteen-declaration consumer scope',
+            declarationWording,
             'complete fifteen-declaration consumer scope',
           );
           await writeFile(readmePath, readme);
