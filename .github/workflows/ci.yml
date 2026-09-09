@@ -15,7 +15,7 @@ concurrency:
 
 env:
   TJSV_REVISION: a4b731fbf82c4d162abd74fd03758fa32bb76176
-  EXPECTED_DECLARATIONS: '["Scintilla.Lambda.V1.Architecture","Scintilla.Lambda.V1.ContainerArtifact","Scintilla.Lambda.V1.ContainerFormat","Scintilla.Lambda.V1.ExecutableArtifact","Scintilla.Lambda.V1.InvocationError","Scintilla.Lambda.V1.InvocationFailure","Scintilla.Lambda.V1.InvocationProtocol","Scintilla.Lambda.V1.InvocationRequest","Scintilla.Lambda.V1.InvocationResponse","Scintilla.Lambda.V1.InvocationSuccess","Scintilla.Lambda.V1.LambdaManifest","Scintilla.Lambda.V1.LaunchArgument","Scintilla.Lambda.V1.OperatingSystem","Scintilla.Lambda.V1.Runtime"]'
+  EXPECTED_DECLARATIONS: '["Scintilla.Lambda.V1.Architecture","Scintilla.Lambda.V1.ContainerArtifact","Scintilla.Lambda.V1.ContainerFormat","Scintilla.Lambda.V1.ExecutableArtifact","Scintilla.Lambda.V1.InvocationError","Scintilla.Lambda.V1.InvocationFailure","Scintilla.Lambda.V1.InvocationProtocol","Scintilla.Lambda.V1.InvocationRequest","Scintilla.Lambda.V1.InvocationResponse","Scintilla.Lambda.V1.InvocationSuccess","Scintilla.Lambda.V1.LambdaManifest","Scintilla.Lambda.V1.LaunchArgument","Scintilla.Lambda.V1.OperatingSystem","Scintilla.Lambda.V1.Runtime","Scintilla.Lambda.V1.SchemaCatalog"]'
 
 jobs:
   contract:
@@ -64,6 +64,9 @@ jobs:
           assert.equal(contractIr.authorities?.jsonSchema, 'independently-authored');
           assert.equal(contractIr.authorities?.generatedJsonSchema, 'comparison-evidence-only');
           assert.equal(contractIr.authorities?.precedence, 'none');
+          assert.equal(contractIr.admission.scope.complete, true);
+          assert.equal(contractIr.admission.scope.excludedDeclarations, 0);
+          assert.deepEqual(contractIr.excludedDeclarations, []);
           assert.deepEqual(contractIr.declarations.map(({ id }) => id), expected);
           NODE
       - name: Reverify retained Contract IR against current inputs and complete scope
