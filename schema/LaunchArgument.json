@@ -1,0 +1,9 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scintilla.run/schemas/lambda/v1/LaunchArgument.json",
+  "title": "LaunchArgument",
+  "description": "One literal argv element passed to a container entrypoint or bare executable.",
+  "type": "string",
+  "minLength": 1,
+  "maxLength": 1024
+}

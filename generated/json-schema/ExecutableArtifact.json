@@ -24,7 +24,7 @@
         "args": {
             "type": "array",
             "items": {
-                "$ref": "#/$defs/LaunchArgument"
+                "$ref": "LaunchArgument.json"
             },
             "maxItems": 64
         }
@@ -38,12 +38,5 @@
     ],
     "unevaluatedProperties": {
         "not": {}
-    },
-    "$defs": {
-        "LaunchArgument": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 1024
-        }
     }
 }

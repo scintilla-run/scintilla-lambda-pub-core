@@ -1,8 +1,11 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scintilla.run/schemas/lambda/v1/ContainerFormat.json",
-  "title": "Container image format",
+  "title": "ContainerFormat",
   "description": "docker denotes Docker Image Manifest V2 compatibility; oci denotes an OCI Image Manifest.",
   "type": "string",
-  "enum": ["docker", "oci"]
+  "enum": [
+    "docker",
+    "oci"
+  ]
 }

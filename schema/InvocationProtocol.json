@@ -1,7 +1,10 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scintilla.run/schemas/lambda/v1/InvocationProtocol.json",
-  "title": "Invocation protocol",
+  "title": "InvocationProtocol",
   "type": "string",
-  "enum": ["stdio-json-v1"]
+  "enum": [
+    "stdio-json-v1"
+  ],
+  "description": "Invocation protocol"
 }

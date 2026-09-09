@@ -21,7 +21,7 @@
         "entrypoint": {
             "type": "array",
             "items": {
-                "$ref": "#/$defs/LaunchArgument"
+                "$ref": "LaunchArgument.json"
             },
             "minItems": 1,
             "maxItems": 64
@@ -36,12 +36,5 @@
     ],
     "unevaluatedProperties": {
         "not": {}
-    },
-    "$defs": {
-        "LaunchArgument": {
-            "type": "string",
-            "minLength": 1,
-            "maxLength": 1024
-        }
     }
 }
