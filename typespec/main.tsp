@@ -127,3 +127,10 @@ model InvocationResponse {
   invocationId: string;
   result: InvocationSuccess | InvocationFailure;
 }
+
+@jsonSchema
+union SchemaCatalog {
+  manifest: LambdaManifest,
+  request: InvocationRequest,
+  response: InvocationResponse,
+}

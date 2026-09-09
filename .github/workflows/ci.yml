@@ -14,12 +14,13 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TJSV_REVISION: 4740f1367a7906813dcd420a77d0c9ede26943fb
+  TJSV_REVISION: a4b731fbf82c4d162abd74fd03758fa32bb76176
+  EXPECTED_DECLARATIONS: '["Scintilla.Lambda.V1.Architecture","Scintilla.Lambda.V1.ContainerArtifact","Scintilla.Lambda.V1.ContainerFormat","Scintilla.Lambda.V1.ExecutableArtifact","Scintilla.Lambda.V1.InvocationError","Scintilla.Lambda.V1.InvocationFailure","Scintilla.Lambda.V1.InvocationProtocol","Scintilla.Lambda.V1.InvocationRequest","Scintilla.Lambda.V1.InvocationResponse","Scintilla.Lambda.V1.InvocationSuccess","Scintilla.Lambda.V1.LambdaManifest","Scintilla.Lambda.V1.LaunchArgument","Scintilla.Lambda.V1.OperatingSystem","Scintilla.Lambda.V1.Runtime","Scintilla.Lambda.V1.SchemaCatalog"]'
 
 jobs:
   contract:
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 30
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -33,7 +34,7 @@ jobs:
       - name: Preserve the repository-local deterministic cross-check
         run: npm run verify
       - name: Enforce peer TypeSpec and JSON Schema authorities with immutable TJSV
-        uses: ORESoftware/typespec-json-schema-validator@4740f1367a7906813dcd420a77d0c9ede26943fb
+        uses: ORESoftware/typespec-json-schema-validator@a4b731fbf82c4d162abd74fd03758fa32bb76176
         with:
           typespec: typespec/main.tsp
           schema: schema
@@ -48,23 +49,62 @@ jobs:
       - name: Require an admissible, peer-authority Contract IR
         run: |
           node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
           import { readFile } from 'node:fs/promises';
 
+          const expected = JSON.parse(process.env.EXPECTED_DECLARATIONS);
           const report = JSON.parse(await readFile('.typespec-json-schema-validator/positive/report.json', 'utf8'));
           const contractIr = JSON.parse(await readFile('.typespec-json-schema-validator/positive/contract-ir.json', 'utf8'));
-          if (report.status !== 'passed' || report.zeroUnexplainedFindings !== true) {
-            throw new Error('TJSV parity receipt is not a zero-finding pass');
-          }
-          if (contractIr.status !== 'passed' || contractIr.admissible !== true) {
-            throw new Error('TJSV Contract IR is not admissible');
-          }
-          if (contractIr.authorities?.typespec !== 'independently-authored' ||
-              contractIr.authorities?.jsonSchema !== 'independently-authored' ||
-              contractIr.authorities?.generatedJsonSchema !== 'comparison-evidence-only' ||
-              contractIr.authorities?.precedence !== 'none') {
-            throw new Error('TJSV Contract IR changed the peer-authority boundary');
-          }
+          assert.equal(report.status, 'passed');
+          assert.equal(report.zeroUnexplainedFindings, true);
+          assert.deepEqual(report.findings, []);
+          assert.equal(contractIr.status, 'passed');
+          assert.equal(contractIr.admissible, true);
+          assert.equal(contractIr.authorities?.typespec, 'independently-authored');
+          assert.equal(contractIr.authorities?.jsonSchema, 'independently-authored');
+          assert.equal(contractIr.authorities?.generatedJsonSchema, 'comparison-evidence-only');
+          assert.equal(contractIr.authorities?.precedence, 'none');
+          assert.equal(contractIr.admission.scope.complete, true);
+          assert.equal(contractIr.admission.scope.excludedDeclarations, 0);
+          assert.deepEqual(contractIr.excludedDeclarations, []);
+          assert.deepEqual(contractIr.declarations.map(({ id }) => id), expected);
           NODE
+      - name: Reverify retained Contract IR against current inputs and complete scope
+        uses: ORESoftware/typespec-json-schema-validator/actions/verify-contract-ir@a4b731fbf82c4d162abd74fd03758fa32bb76176
+        with:
+          contract_ir: .typespec-json-schema-validator/positive/contract-ir.json
+          report: .typespec-json-schema-validator/positive/report.json
+          typespec: typespec/main.tsp
+          schema: schema
+          generated_schema: .typespec-json-schema-validator/positive/generated/typespec.generated.schema.json
+          expected_declarations: ${{ env.EXPECTED_DECLARATIONS }}
+          verification: .typespec-json-schema-validator/positive/consumer-verification.json
+      - name: Require a self-digesting complete-scope consumer receipt
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFile } from 'node:fs/promises';
+
+          const expected = JSON.parse(process.env.EXPECTED_DECLARATIONS);
+          const receipt = JSON.parse(await readFile('.typespec-json-schema-validator/positive/consumer-verification.json', 'utf8'));
+          assert.equal(receipt.schema, 'ores.typespec-json-schema-validator.consumer-verification-receipt/v1');
+          assert.equal(receipt.status, 'passed');
+          assert.equal(receipt.admissible, true);
+          assert.equal(receipt.failureCode, null);
+          assert.deepEqual(receipt.declarationIds, expected);
+          assert.equal(receipt.suppliedIrId, receipt.computedIrId);
+          assert.equal(receipt.suppliedIrId, receipt.expectedIrId);
+          NODE
+      - name: Prove consumer admission rejects altered evidence and incomplete scope
+        uses: ORESoftware/typespec-json-schema-validator/actions/test-consumer-admission@a4b731fbf82c4d162abd74fd03758fa32bb76176
+        with:
+          contract_ir: .typespec-json-schema-validator/positive/contract-ir.json
+          report: .typespec-json-schema-validator/positive/report.json
+          typespec: typespec/main.tsp
+          schema: schema
+          generated_schema: .typespec-json-schema-validator/positive/generated/typespec.generated.schema.json
+          expected_declarations: ${{ env.EXPECTED_DECLARATIONS }}
+          verification: .typespec-json-schema-validator/consumer-regressions/verification.json
       - name: Prepare an intentional runtime-enum drift control
         run: |
           set -euo pipefail
@@ -81,7 +121,7 @@ jobs:
       - name: Prove TJSV fails closed on peer-authority drift
         id: negative-control
         continue-on-error: true
-        uses: ORESoftware/typespec-json-schema-validator@4740f1367a7906813dcd420a77d0c9ede26943fb
+        uses: ORESoftware/typespec-json-schema-validator@a4b731fbf82c4d162abd74fd03758fa32bb76176
         with:
           typespec: typespec/main.tsp
           schema: tmp/tjsv-negative/schema
@@ -98,19 +138,19 @@ jobs:
           NEGATIVE_CONTROL_OUTCOME: ${{ steps.negative-control.outcome }}
         run: |
           node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
           import { readFile } from 'node:fs/promises';
 
-          if (process.env.NEGATIVE_CONTROL_OUTCOME !== 'failure') {
-            throw new Error(`intentional TJSV drift unexpectedly returned ${process.env.NEGATIVE_CONTROL_OUTCOME}`);
-          }
+          assert.equal(process.env.NEGATIVE_CONTROL_OUTCOME, 'failure');
           const report = JSON.parse(await readFile('.typespec-json-schema-validator/negative/report.json', 'utf8'));
           const contractIr = JSON.parse(await readFile('.typespec-json-schema-validator/negative/contract-ir.json', 'utf8'));
-          if (report.status !== 'stopped_for_evaluation' || report.zeroUnexplainedFindings !== false || !report.findings?.length) {
-            throw new Error('negative TJSV receipt did not retain discrepancy evidence');
-          }
-          if (contractIr.status !== 'stopped_for_evaluation' || contractIr.admissible !== false || contractIr.declarations?.length !== 0) {
-            throw new Error('negative TJSV Contract IR was not a non-admissible tombstone');
-          }
+          assert.equal(report.status, 'stopped_for_evaluation');
+          assert.equal(report.zeroUnexplainedFindings, false);
+          assert.ok(report.findings.length > 0);
+          assert.equal(contractIr.status, 'stopped_for_evaluation');
+          assert.equal(contractIr.admissible, false);
+          assert.deepEqual(contractIr.declarations, []);
+          assert.equal(contractIr.admission.receipt.runId, report.runId);
           NODE
       - name: Retain exact-source TJSV evidence
         if: always()
@@ -125,24 +165,45 @@ jobs:
   native:
     needs: contract
     runs-on: ubuntu-24.04
-    timeout-minutes: 20
+    timeout-minutes: 25
     strategy:
       fail-fast: false
       matrix:
-        language: [typescript, bun, deno, rust, go, erlang, gleam]
+        include:
+          - language: typescript
+            runtime: node
+            directory: typescript
+          - language: typescript
+            runtime: bun
+            directory: bun
+          - language: typescript
+            runtime: deno
+            directory: deno
+          - language: rust
+            runtime: native
+            directory: rust
+          - language: go
+            runtime: native
+            directory: go
+          - language: erlang
+            runtime: beam
+            directory: erlang
+          - language: gleam
+            runtime: beam
+            directory: gleam
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           persist-credentials: false
-      - if: matrix.language == 'typescript'
+      - if: matrix.runtime == 'node'
         uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
         with:
           node-version: "22"
-      - if: matrix.language == 'bun'
+      - if: matrix.runtime == 'bun'
         uses: oven-sh/setup-bun@0c5077e51419868618aeaa5fe8019c62421857d6
         with:
           bun-version: "1.4.1"
-      - if: matrix.language == 'deno'
+      - if: matrix.runtime == 'deno'
         uses: denoland/setup-deno@22d081ff2d3a40755e97629de92e3bcbfa7cf2ed
         with:
           deno-version: "2.9.6"
@@ -164,16 +225,174 @@ jobs:
         run: rustup toolchain install 1.96.0 --profile minimal --component clippy,rustfmt --no-self-update
       - name: Test native target
         env:
+          DIRECTORY: ${{ matrix.directory }}
           LANGUAGE: ${{ matrix.language }}
+          RUNTIME: ${{ matrix.runtime }}
         run: |
           set -euo pipefail
-          case "$LANGUAGE" in
-            typescript) (cd languages/typescript && npm test) ;;
-            bun) (cd languages/bun && bun test) ;;
-            deno) (cd languages/deno && deno test) ;;
-            rust) (cd languages/rust && cargo +1.96.0 fmt --check && cargo +1.96.0 clippy --all-targets --locked -- -D warnings && cargo +1.96.0 test --locked) ;;
-            go) (cd languages/go && test -z "$(gofmt -d .)" && go vet ./... && go test -race -cover ./...) ;;
-            erlang) (cd languages/erlang && rebar3 compile && rebar3 eunit) ;;
-            gleam) (cd languages/gleam && gleam format --check src test && gleam test) ;;
+          case "$LANGUAGE:$RUNTIME" in
+            typescript:node) (cd languages/$DIRECTORY && npm test) ;;
+            typescript:bun) (cd languages/$DIRECTORY && bun test) ;;
+            typescript:deno) (cd languages/$DIRECTORY && deno test) ;;
+            rust:native) (cd languages/$DIRECTORY && cargo +1.96.0 fmt --check && cargo +1.96.0 clippy --all-targets --locked -- -D warnings && cargo +1.96.0 test --locked) ;;
+            go:native) (cd languages/$DIRECTORY && test -z "$(gofmt -d .)" && go vet ./... && go test -race -cover ./...) ;;
+            erlang:beam) (cd languages/$DIRECTORY && rebar3 compile && rebar3 eunit) ;;
+            gleam:beam) (cd languages/$DIRECTORY && gleam format --check src test && gleam test) ;;
             *) exit 64 ;;
           esac
+      - name: Download the exact admitted contract evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lambda-peer-authority-evidence
+          path: .contract-evidence
+      - name: Package tested binding and emit a closed runtime evidence envelope
+        env:
+          DIRECTORY: ${{ matrix.directory }}
+          LANGUAGE: ${{ matrix.language }}
+          RUNTIME: ${{ matrix.runtime }}
+          SOURCE_REVISION: ${{ github.event.pull_request.head.sha || github.sha }}
+        run: |
+          set -euo pipefail
+          mkdir -p runtime-package runtime-evidence
+          archive="runtime-package/${LANGUAGE}-${RUNTIME}.tar"
+          tar \
+            --sort=name \
+            --mtime='UTC 1970-01-01' \
+            --owner=0 \
+            --group=0 \
+            --numeric-owner \
+            --exclude='./node_modules' \
+            --exclude='./target' \
+            --exclude='./_build' \
+            --exclude='./build' \
+            -cf "$archive" \
+            -C "languages/${DIRECTORY}" .
+
+          artifact_digest="$(sha256sum "$archive" | cut -d' ' -f1)"
+          receipt_run_id="$(jq -er .runId .contract-evidence/positive/report.json)"
+          contract_ir_id="$(jq -er .irId .contract-evidence/positive/contract-ir.json)"
+          generator_version="$(jq -er .version package.json)"
+
+          case "$LANGUAGE:$RUNTIME" in
+            typescript:node)
+              toolchain_name='node'
+              toolchain_version="$(node --version)"
+              ;;
+            typescript:bun)
+              toolchain_name='bun'
+              toolchain_version="$(bun --version)"
+              ;;
+            typescript:deno)
+              toolchain_name='deno'
+              toolchain_version="$(deno --version | head -n 1)"
+              ;;
+            rust:native)
+              toolchain_name='rustc'
+              toolchain_version="$(rustc +1.96.0 --version)"
+              ;;
+            go:native)
+              toolchain_name='go'
+              toolchain_version="$(go version)"
+              ;;
+            erlang:beam)
+              toolchain_name='erlang-otp'
+              toolchain_version="$(erl -noshell -eval 'io:format("~s", [erlang:system_info(otp_release)]), halt().')"
+              ;;
+            gleam:beam)
+              toolchain_name='gleam'
+              toolchain_version="$(gleam --version)"
+              ;;
+            *) exit 64 ;;
+          esac
+
+          toolchain_version="$(printf '%s' "$toolchain_version" | tr '\n' ' ' | sed -E 's/[[:space:]]+$//')"
+          jq -n \
+            --arg language "$LANGUAGE" \
+            --arg runtime "$RUNTIME" \
+            --arg source_revision "$SOURCE_REVISION" \
+            --arg artifact_digest "sha256:${artifact_digest}" \
+            --arg receipt_run_id "$receipt_run_id" \
+            --arg contract_ir_id "$contract_ir_id" \
+            --arg toolchain_name "$toolchain_name" \
+            --arg toolchain_version "$toolchain_version" \
+            --arg generator_version "$generator_version" \
+            '{
+              schema: "ores.typespec-json-schema-validator.language-boundary-evidence/v1",
+              language: $language,
+              runtime: $runtime,
+              status: "passed",
+              sourceRevision: $source_revision,
+              artifactDigest: $artifact_digest,
+              receiptRunId: $receipt_run_id,
+              contractIrId: $contract_ir_id,
+              toolchain: {name: $toolchain_name, version: $toolchain_version},
+              generator: {name: "scintilla-lambda-pub-core-package-archive", version: $generator_version},
+              validation: {ingress: "passed", egress: "passed"}
+            }' > "runtime-evidence/${LANGUAGE}-${RUNTIME}.json"
+      - name: Retain tested package and runtime evidence
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: lambda-runtime-${{ matrix.language }}-${{ matrix.runtime }}
+          path: |
+            runtime-package/${{ matrix.language }}-${{ matrix.runtime }}.tar
+            runtime-evidence/${{ matrix.language }}-${{ matrix.runtime }}.json
+          if-no-files-found: error
+          retention-days: 30
+
+  language-boundaries:
+    needs: native
+    runs-on: ubuntu-24.04
+    timeout-minutes: 20
+    steps:
+      - name: Check out the exact consumer source
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          persist-credentials: false
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: "22"
+      - name: Download exact peer-authority evidence
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          name: lambda-peer-authority-evidence
+          path: .contract-evidence
+      - name: Download every tested runtime package and evidence envelope
+        uses: actions/download-artifact@d3f86a106a0bac45b974a628896c90dbdf5c8093
+        with:
+          pattern: lambda-runtime-*
+          path: .runtime-artifacts
+          merge-multiple: true
+      - name: Check out the immutable TJSV verifier implementation
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          repository: ORESoftware/typespec-json-schema-validator
+          ref: a4b731fbf82c4d162abd74fd03758fa32bb76176
+          path: tmp/tjsv
+          persist-credentials: false
+      - name: Install the immutable verifier toolchain
+        run: npm ci --omit=dev
+        working-directory: tmp/tjsv
+      - name: Verify current inputs and all language/runtime evidence
+        env:
+          TJSV_MODULE_ROOT: tmp/tjsv
+          LANGUAGE_BOUNDARY_MANIFEST: config/language-boundaries.json
+          LANGUAGE_BOUNDARY_EVIDENCE_DIR: .runtime-artifacts/runtime-evidence
+          TJSV_PARITY_REPORT: .contract-evidence/positive/report.json
+          TJSV_CONTRACT_IR: .contract-evidence/positive/contract-ir.json
+          TJSV_GENERATED_SCHEMA: .contract-evidence/positive/generated/typespec.generated.schema.json
+          TJSV_TYPESPEC: typespec/main.tsp
+          TJSV_AUTHORED_SCHEMA: schema
+          TJSV_BOUNDARY_OUTPUT_DIR: .language-boundary-verification
+        run: node scripts/verify-language-boundaries.mjs
+      - name: Retain cross-language admission and negative controls
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: lambda-language-boundary-evidence
+          path: |
+            .language-boundary-verification/
+            .runtime-artifacts/runtime-evidence/
+            .runtime-artifacts/runtime-package/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30

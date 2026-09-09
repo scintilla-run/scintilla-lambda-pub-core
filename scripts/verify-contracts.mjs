@@ -34,9 +34,12 @@ function normalize(value) {
 }
 
 const generatedFiles = jsonFiles(generatedDir);
-const canonicalModelFiles = jsonFiles(canonicalDir).filter((name) => name !== "index.json");
+const canonicalSchemaPairs = jsonFiles(canonicalDir).map((canonicalFile) => ({
+  canonicalFile,
+  generatedFile: canonicalFile === "index.json" ? "SchemaCatalog.json" : canonicalFile,
+}));
 assert.deepEqual(
-  canonicalModelFiles,
+  canonicalSchemaPairs.map(({ generatedFile }) => generatedFile).sort(),
   generatedFiles,
   "the authored and TypeSpec-generated schema sets differ",
 );
@@ -51,22 +54,20 @@ for (const runtime of ["bun", "deno"]) {
   }
 }
 
-for (const name of canonicalModelFiles) {
-  const canonical = readJson(join(canonicalDir, name));
-  const generated = readJson(join(generatedDir, name));
+for (const { canonicalFile, generatedFile } of canonicalSchemaPairs) {
+  const canonical = readJson(join(canonicalDir, canonicalFile));
+  const generated = readJson(join(generatedDir, generatedFile));
   assert.deepEqual(
     normalize(canonical),
     normalize(generated),
-    `${name} differs between authored JSON Schema and TypeSpec output`,
+    `${canonicalFile} differs between authored JSON Schema and TypeSpec output`,
   );
 }
 
 function validatorFor(directory) {
   const ajv = new Ajv2020({ allErrors: true, strict: true });
   for (const name of jsonFiles(directory)) {
-    if (name !== "index.json") {
-      ajv.addSchema(readJson(join(directory, name)));
-    }
+    ajv.addSchema(readJson(join(directory, name)));
   }
   return ajv;
 }
@@ -307,5 +308,5 @@ for (const [language, runtimes] of Object.entries(bindingRuntimes)) {
 }
 
 console.log(
-  `verified ${canonicalModelFiles.length} dual-authored schemas, ${fixtureCount} fixtures, ${boundaryCaseCount} boundary cases, ${coveredRuntimes.size} runtimes, and ${Object.keys(bindingRuntimes).length} native bindings`,
+  `verified ${canonicalSchemaPairs.length} dual-authored schemas, ${fixtureCount} fixtures, ${boundaryCaseCount} boundary cases, ${coveredRuntimes.size} runtimes, and ${Object.keys(bindingRuntimes).length} native bindings`,
 );
