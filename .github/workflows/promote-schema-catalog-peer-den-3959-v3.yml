@@ -1,0 +1,169 @@
+name: Land verified schema catalog peer for DEN-3959
+
+on:
+  push:
+    branches:
+      - DEN-3959/language-boundary-consumer-admission
+    paths:
+      - .github/workflows/promote-schema-catalog-peer-den-3959-v3.yml
+
+permissions:
+  contents: write
+
+concurrency:
+  group: land-schema-catalog-peer-den-3959
+  cancel-in-progress: false
+
+env:
+  EXPECTED_DECLARATIONS: '["Scintilla.Lambda.V1.Architecture","Scintilla.Lambda.V1.ContainerArtifact","Scintilla.Lambda.V1.ContainerFormat","Scintilla.Lambda.V1.ExecutableArtifact","Scintilla.Lambda.V1.InvocationError","Scintilla.Lambda.V1.InvocationFailure","Scintilla.Lambda.V1.InvocationProtocol","Scintilla.Lambda.V1.InvocationRequest","Scintilla.Lambda.V1.InvocationResponse","Scintilla.Lambda.V1.InvocationSuccess","Scintilla.Lambda.V1.LambdaManifest","Scintilla.Lambda.V1.LaunchArgument","Scintilla.Lambda.V1.OperatingSystem","Scintilla.Lambda.V1.Runtime","Scintilla.Lambda.V1.SchemaCatalog"]'
+
+jobs:
+  transform-test-and-push-non-workflow-files:
+    if: github.repository == 'scintilla-run/scintilla-lambda-pub-core' && github.ref == 'refs/heads/DEN-3959/language-boundary-consumer-admission'
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Check out the exact reviewed branch
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
+        with:
+          ref: DEN-3959/language-boundary-consumer-admission
+          fetch-depth: 0
+          persist-credentials: true
+
+      - name: Promote the compatibility catalog into both peer authorities
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises';
+
+          const typeSpecPath = 'typespec/main.tsp';
+          let typeSpec = await readFile(typeSpecPath, 'utf8');
+          if (typeSpec.includes('union SchemaCatalog')) {
+            throw new Error('SchemaCatalog already exists; refuse an ambiguous repeated migration');
+          }
+          typeSpec = `${typeSpec.trimEnd()}\n\n@jsonSchema\nunion SchemaCatalog {\n  manifest: LambdaManifest,\n  request: InvocationRequest,\n  response: InvocationResponse,\n}\n`;
+          await writeFile(typeSpecPath, typeSpec);
+
+          const catalogPath = 'schema/index.json';
+          const catalog = JSON.parse(await readFile(catalogPath, 'utf8'));
+          if (catalog.title !== 'Scintilla lambda public core schema catalog') {
+            throw new Error('schema/index.json title changed; refuse an ambiguous migration');
+          }
+          catalog.title = 'SchemaCatalog';
+          catalog.description = 'Scintilla lambda public core schema catalog and compatibility entry point.';
+          catalog.anyOf = catalog.oneOf;
+          delete catalog.oneOf;
+          await writeFile(catalogPath, `${JSON.stringify(catalog, null, 2)}\n`);
+
+          const mappingPath = 'config/tjsv-declaration-mapping.json';
+          const mapping = JSON.parse(await readFile(mappingPath, 'utf8'));
+          if (mapping.declarations.some(({ typespec }) => typespec === 'Scintilla.Lambda.V1.SchemaCatalog')) {
+            throw new Error('SchemaCatalog mapping already exists');
+          }
+          mapping.declarations.push({
+            typespec: 'Scintilla.Lambda.V1.SchemaCatalog',
+            generated: 'SchemaCatalog',
+            authored: 'SchemaCatalog',
+          });
+          mapping.declarations.sort((left, right) => left.typespec.localeCompare(right.typespec));
+          mapping.ignore = { typespec: [], generated: [], authored: [] };
+          await writeFile(mappingPath, `${JSON.stringify(mapping, null, 2)}\n`);
+
+          const verifierPath = 'scripts/verify-contracts.mjs';
+          let verifier = await readFile(verifierPath, 'utf8');
+          const oldInventory = `const generatedFiles = jsonFiles(generatedDir);\nconst canonicalModelFiles = jsonFiles(canonicalDir).filter((name) => name !== "index.json");\nassert.deepEqual(\n  canonicalModelFiles,\n  generatedFiles,\n  "the authored and TypeSpec-generated schema sets differ",\n);`;
+          const newInventory = `const generatedFiles = jsonFiles(generatedDir);\nconst canonicalSchemaPairs = jsonFiles(canonicalDir).map((canonicalFile) => ({\n  canonicalFile,\n  generatedFile: canonicalFile === "index.json" ? "SchemaCatalog.json" : canonicalFile,\n}));\nassert.deepEqual(\n  canonicalSchemaPairs.map(({ generatedFile }) => generatedFile).sort(),\n  generatedFiles,\n  "the authored and TypeSpec-generated schema sets differ",\n);`;
+          if (!verifier.includes(oldInventory)) throw new Error('local verifier inventory block changed');
+          verifier = verifier.replace(oldInventory, newInventory);
+
+          const oldComparison = `for (const name of canonicalModelFiles) {\n  const canonical = readJson(join(canonicalDir, name));\n  const generated = readJson(join(generatedDir, name));\n  assert.deepEqual(\n    normalize(canonical),\n    normalize(generated),\n    \`${'${name}'} differs between authored JSON Schema and TypeSpec output\`,\n  );\n}`;
+          const newComparison = `for (const { canonicalFile, generatedFile } of canonicalSchemaPairs) {\n  const canonical = readJson(join(canonicalDir, canonicalFile));\n  const generated = readJson(join(generatedDir, generatedFile));\n  assert.deepEqual(\n    normalize(canonical),\n    normalize(generated),\n    \`${'${canonicalFile}'} differs between authored JSON Schema and TypeSpec output\`,\n  );\n}`;
+          if (!verifier.includes(oldComparison)) throw new Error('local verifier comparison block changed');
+          verifier = verifier.replace(oldComparison, newComparison);
+
+          const oldValidator = `  for (const name of jsonFiles(directory)) {\n    if (name !== "index.json") {\n      ajv.addSchema(readJson(join(directory, name)));\n    }\n  }`;
+          const newValidator = `  for (const name of jsonFiles(directory)) {\n    ajv.addSchema(readJson(join(directory, name)));\n  }`;
+          if (!verifier.includes(oldValidator)) throw new Error('local verifier AJV block changed');
+          verifier = verifier.replace(oldValidator, newValidator);
+          verifier = verifier.replace('canonicalModelFiles.length', 'canonicalSchemaPairs.length');
+          await writeFile(verifierPath, verifier);
+
+          const readmePath = 'README.md';
+          let readme = await readFile(readmePath, 'utf8');
+          const declarationWording = /complete\s+fourteen-declaration consumer scope/u;
+          if (!declarationWording.test(readme)) throw new Error('README declaration count wording changed');
+          readme = readme.replace(declarationWording, 'complete fifteen-declaration consumer scope');
+          await writeFile(readmePath, readme);
+          NODE
+
+      - uses: actions/setup-node@820762786026740c76f36085b0efc47a31fe5020
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Generate the exact TypeSpec witness and run the complete local verifier
+        run: |
+          npm ci --ignore-scripts
+          npm run verify
+
+      - name: Require complete peer-authority admission
+        uses: ORESoftware/typespec-json-schema-validator@a4b731fbf82c4d162abd74fd03758fa32bb76176
+        with:
+          typespec: typespec/main.tsp
+          schema: schema
+          mapping: config/tjsv-declaration-mapping.json
+          instances: fixtures
+          report: .typespec-json-schema-validator/catalog/report.json
+          sarif: .typespec-json-schema-validator/catalog/report.sarif
+          contract_ir: .typespec-json-schema-validator/catalog/contract-ir.json
+          output_dir: .typespec-json-schema-validator/catalog/generated
+          max_probes: '64'
+          seal_object_schemas: 'true'
+
+      - name: Reverify current inputs and complete consumer scope
+        uses: ORESoftware/typespec-json-schema-validator/actions/verify-contract-ir@a4b731fbf82c4d162abd74fd03758fa32bb76176
+        with:
+          contract_ir: .typespec-json-schema-validator/catalog/contract-ir.json
+          report: .typespec-json-schema-validator/catalog/report.json
+          typespec: typespec/main.tsp
+          schema: schema
+          generated_schema: .typespec-json-schema-validator/catalog/generated/typespec.generated.schema.json
+          expected_declarations: ${{ env.EXPECTED_DECLARATIONS }}
+          verification: .typespec-json-schema-validator/catalog/consumer-verification.json
+
+      - name: Require complete admissible receipts before committing
+        run: |
+          node --input-type=module <<'NODE'
+          import assert from 'node:assert/strict';
+          import { readFile } from 'node:fs/promises';
+          const expected = JSON.parse(process.env.EXPECTED_DECLARATIONS);
+          const report = JSON.parse(await readFile('.typespec-json-schema-validator/catalog/report.json', 'utf8'));
+          const contractIr = JSON.parse(await readFile('.typespec-json-schema-validator/catalog/contract-ir.json', 'utf8'));
+          const verification = JSON.parse(await readFile('.typespec-json-schema-validator/catalog/consumer-verification.json', 'utf8'));
+          assert.equal(report.status, 'passed');
+          assert.equal(report.zeroUnexplainedFindings, true);
+          assert.deepEqual(report.findings, []);
+          assert.equal(contractIr.status, 'passed');
+          assert.equal(contractIr.admissible, true);
+          assert.equal(contractIr.admission.scope.complete, true);
+          assert.equal(contractIr.admission.scope.excludedDeclarations, 0);
+          assert.deepEqual(contractIr.declarations.map(({ id }) => id), expected);
+          assert.equal(verification.status, 'passed');
+          assert.equal(verification.admissible, true);
+          assert.deepEqual(verification.declarationIds, expected);
+          NODE
+
+      - name: Commit and push only verified non-workflow files
+        run: |
+          set -euo pipefail
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -- \
+            typespec/main.tsp \
+            schema/index.json \
+            config/tjsv-declaration-mapping.json \
+            scripts/verify-contracts.mjs \
+            generated/json-schema/SchemaCatalog.json \
+            README.md
+          git diff --cached --check
+          git commit -m 'fix(DEN-3959): make schema catalog a complete peer declaration'
+          git push origin HEAD:DEN-3959/language-boundary-consumer-admission
