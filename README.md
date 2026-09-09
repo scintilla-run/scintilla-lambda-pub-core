@@ -30,6 +30,30 @@ compares its normalized structure with every authored schema, validates the
 same positive and negative fixtures against both, and proves fixture coverage
 for every runtime. Neither authority can drift unnoticed.
 
+Hosted admission additionally pins
+[`ORESoftware/typespec-json-schema-validator`](https://github.com/ORESoftware/typespec-json-schema-validator)
+to an immutable reviewed commit. TJSV emits the parity receipt and Contract IR,
+then independently rebuilds verification from the exact current TypeSpec,
+generated comparison witness, authored JSON Schema closure, and complete
+fourteen-declaration consumer scope. Its consumer regression action must reject
+altered digests, stale evidence, tampered IR, and incomplete scope.
+
+## Cross-language and runtime evidence
+
+[`config/language-boundaries.json`](config/language-boundaries.json) declares
+five required language identities across seven tested runtime targets:
+TypeScript on Node.js, Bun, and Deno; native Rust and Go; and Erlang and Gleam
+on BEAM.
+
+Each native lane runs its own tests before producing a deterministic package
+archive and closed TJSV language-boundary evidence envelope. A final admission
+job re-verifies the retained Contract IR against the current peer-authority
+inputs and admits all seven envelopes together. It also proves failure for a
+stale authored authority, altered receipt identity, inconsistent source
+revision, unknown evidence field, and duplicate evidence path. Runtime receipts
+and package archives remain evidence; they never become a third contract
+authority.
+
 ## Install with Zed Package Manager
 
 The root [`.zpkg.toml`](.zpkg.toml) exports the complete contract plus focused
@@ -71,5 +95,7 @@ npm ci --ignore-scripts
 ./scripts/verify-all.sh
 ```
 
-The full gate compiles TypeSpec, verifies both schema authorities, tests every
-native binding, and validates the Zed package manifest.
+The repository-local gate compiles TypeSpec, verifies both schema authorities,
+tests every native binding, and validates the Zed package manifest. Hosted CI
+adds immutable TJSV current-input, consumer-admission, and cross-language
+runtime evidence gates.
