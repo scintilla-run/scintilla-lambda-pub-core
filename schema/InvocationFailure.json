@@ -1,12 +1,23 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scintilla.run/schemas/lambda/v1/InvocationFailure.json",
-  "title": "Failed invocation result",
+  "title": "InvocationFailure",
   "type": "object",
   "properties": {
-    "status": {"type": "string", "const": "error"},
-    "error": {"$ref": "InvocationError.json"}
+    "status": {
+      "type": "string",
+      "const": "error"
+    },
+    "error": {
+      "$ref": "InvocationError.json"
+    }
   },
-  "required": ["status", "error"],
-  "unevaluatedProperties": {"not": {}}
+  "required": [
+    "status",
+    "error"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Failed invocation result"
 }

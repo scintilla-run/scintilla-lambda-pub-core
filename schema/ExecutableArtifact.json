@@ -1,23 +1,44 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scintilla.run/schemas/lambda/v1/ExecutableArtifact.json",
-  "title": "Immutable bare executable artifact",
-  "$defs": {
-    "LaunchArgument": {"type": "string", "minLength": 1, "maxLength": 1024}
-  },
+  "title": "ExecutableArtifact",
   "type": "object",
   "properties": {
-    "kind": {"type": "string", "const": "executable"},
-    "command": {"type": "string", "pattern": "^(\\./|/)[A-Za-z0-9._/+-]+$"},
-    "sha256": {"type": "string", "pattern": "^[a-f0-9]{64}$"},
-    "os": {"$ref": "OperatingSystem.json"},
-    "architecture": {"$ref": "Architecture.json"},
+    "kind": {
+      "type": "string",
+      "const": "executable"
+    },
+    "command": {
+      "type": "string",
+      "pattern": "^(\\./|/)[A-Za-z0-9._/+-]+$"
+    },
+    "sha256": {
+      "type": "string",
+      "pattern": "^[a-f0-9]{64}$"
+    },
+    "os": {
+      "$ref": "OperatingSystem.json"
+    },
+    "architecture": {
+      "$ref": "Architecture.json"
+    },
     "args": {
       "type": "array",
-      "items": {"$ref": "#/$defs/LaunchArgument"},
+      "items": {
+        "$ref": "LaunchArgument.json"
+      },
       "maxItems": 64
     }
   },
-  "required": ["kind", "command", "sha256", "os", "architecture"],
-  "unevaluatedProperties": {"not": {}}
+  "required": [
+    "kind",
+    "command",
+    "sha256",
+    "os",
+    "architecture"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Immutable bare executable artifact"
 }

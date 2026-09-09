@@ -45,6 +45,7 @@ enum InvocationProtocol {
 
 @minLength(1)
 @maxLength(1024)
+@jsonSchema
 scalar LaunchArgument extends string;
 
 @jsonSchema

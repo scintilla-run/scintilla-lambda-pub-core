@@ -13,10 +13,13 @@ concurrency:
   group: lambda-core-${{ github.workflow }}-${{ github.ref }}
   cancel-in-progress: true
 
+env:
+  TJSV_REVISION: 4740f1367a7906813dcd420a77d0c9ede26943fb
+
 jobs:
   contract:
     runs-on: ubuntu-24.04
-    timeout-minutes: 15
+    timeout-minutes: 20
     steps:
       - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
@@ -25,10 +28,102 @@ jobs:
         with:
           node-version: "22"
           cache: npm
-      - run: npm ci --ignore-scripts
-      - run: npm run verify
+      - name: Install the repository contract toolchain
+        run: npm ci --ignore-scripts
+      - name: Preserve the repository-local deterministic cross-check
+        run: npm run verify
+      - name: Enforce peer TypeSpec and JSON Schema authorities with immutable TJSV
+        uses: ORESoftware/typespec-json-schema-validator@4740f1367a7906813dcd420a77d0c9ede26943fb
+        with:
+          typespec: typespec/main.tsp
+          schema: schema
+          mapping: config/tjsv-declaration-mapping.json
+          instances: fixtures
+          report: .typespec-json-schema-validator/positive/report.json
+          sarif: .typespec-json-schema-validator/positive/report.sarif
+          contract_ir: .typespec-json-schema-validator/positive/contract-ir.json
+          output_dir: .typespec-json-schema-validator/positive/generated
+          max_probes: "64"
+          seal_object_schemas: "true"
+      - name: Require an admissible, peer-authority Contract IR
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+
+          const report = JSON.parse(await readFile('.typespec-json-schema-validator/positive/report.json', 'utf8'));
+          const contractIr = JSON.parse(await readFile('.typespec-json-schema-validator/positive/contract-ir.json', 'utf8'));
+          if (report.status !== 'passed' || report.zeroUnexplainedFindings !== true) {
+            throw new Error('TJSV parity receipt is not a zero-finding pass');
+          }
+          if (contractIr.status !== 'passed' || contractIr.admissible !== true) {
+            throw new Error('TJSV Contract IR is not admissible');
+          }
+          if (contractIr.authorities?.typespec !== 'independently-authored' ||
+              contractIr.authorities?.jsonSchema !== 'independently-authored' ||
+              contractIr.authorities?.generatedJsonSchema !== 'comparison-evidence-only' ||
+              contractIr.authorities?.precedence !== 'none') {
+            throw new Error('TJSV Contract IR changed the peer-authority boundary');
+          }
+          NODE
+      - name: Prepare an intentional runtime-enum drift control
+        run: |
+          set -euo pipefail
+          mkdir -p tmp/tjsv-negative
+          cp -R schema tmp/tjsv-negative/schema
+          node --input-type=module <<'NODE'
+          import { readFile, writeFile } from 'node:fs/promises';
+
+          const path = 'tmp/tjsv-negative/schema/Runtime.json';
+          const schema = JSON.parse(await readFile(path, 'utf8'));
+          schema.enum = schema.enum.filter((value) => value !== 'binary');
+          await writeFile(path, `${JSON.stringify(schema, null, 2)}\n`);
+          NODE
+      - name: Prove TJSV fails closed on peer-authority drift
+        id: negative-control
+        continue-on-error: true
+        uses: ORESoftware/typespec-json-schema-validator@4740f1367a7906813dcd420a77d0c9ede26943fb
+        with:
+          typespec: typespec/main.tsp
+          schema: tmp/tjsv-negative/schema
+          mapping: config/tjsv-declaration-mapping.json
+          instances: fixtures
+          report: .typespec-json-schema-validator/negative/report.json
+          sarif: .typespec-json-schema-validator/negative/report.sarif
+          contract_ir: .typespec-json-schema-validator/negative/contract-ir.json
+          output_dir: .typespec-json-schema-validator/negative/generated
+          max_probes: "64"
+          seal_object_schemas: "true"
+      - name: Require a non-admissible negative-control tombstone
+        env:
+          NEGATIVE_CONTROL_OUTCOME: ${{ steps.negative-control.outcome }}
+        run: |
+          node --input-type=module <<'NODE'
+          import { readFile } from 'node:fs/promises';
+
+          if (process.env.NEGATIVE_CONTROL_OUTCOME !== 'failure') {
+            throw new Error(`intentional TJSV drift unexpectedly returned ${process.env.NEGATIVE_CONTROL_OUTCOME}`);
+          }
+          const report = JSON.parse(await readFile('.typespec-json-schema-validator/negative/report.json', 'utf8'));
+          const contractIr = JSON.parse(await readFile('.typespec-json-schema-validator/negative/contract-ir.json', 'utf8'));
+          if (report.status !== 'stopped_for_evaluation' || report.zeroUnexplainedFindings !== false || !report.findings?.length) {
+            throw new Error('negative TJSV receipt did not retain discrepancy evidence');
+          }
+          if (contractIr.status !== 'stopped_for_evaluation' || contractIr.admissible !== false || contractIr.declarations?.length !== 0) {
+            throw new Error('negative TJSV Contract IR was not a non-admissible tombstone');
+          }
+          NODE
+      - name: Retain exact-source TJSV evidence
+        if: always()
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: lambda-peer-authority-evidence
+          path: .typespec-json-schema-validator/
+          if-no-files-found: error
+          include-hidden-files: true
+          retention-days: 30
 
   native:
+    needs: contract
     runs-on: ubuntu-24.04
     timeout-minutes: 20
     strategy:

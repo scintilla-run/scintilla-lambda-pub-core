@@ -1,12 +1,21 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://scintilla.run/schemas/lambda/v1/InvocationSuccess.json",
-  "title": "Successful invocation result",
+  "title": "InvocationSuccess",
   "type": "object",
   "properties": {
-    "status": {"type": "string", "const": "ok"},
+    "status": {
+      "type": "string",
+      "const": "ok"
+    },
     "payload": {}
   },
-  "required": ["status", "payload"],
-  "unevaluatedProperties": {"not": {}}
+  "required": [
+    "status",
+    "payload"
+  ],
+  "unevaluatedProperties": {
+    "not": {}
+  },
+  "description": "Successful invocation result"
 }

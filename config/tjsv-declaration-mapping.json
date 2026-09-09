@@ -1,0 +1,82 @@
+{
+  "schema": "ores.typespec-json-schema-validator.mapping/v1",
+  "declarations": [
+    {
+      "typespec": "Scintilla.Lambda.V1.Architecture",
+      "generated": "Architecture",
+      "authored": "Architecture"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.ContainerArtifact",
+      "generated": "ContainerArtifact",
+      "authored": "ContainerArtifact"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.ContainerFormat",
+      "generated": "ContainerFormat",
+      "authored": "ContainerFormat"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.ExecutableArtifact",
+      "generated": "ExecutableArtifact",
+      "authored": "ExecutableArtifact"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.InvocationError",
+      "generated": "InvocationError",
+      "authored": "InvocationError"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.InvocationFailure",
+      "generated": "InvocationFailure",
+      "authored": "InvocationFailure"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.InvocationProtocol",
+      "generated": "InvocationProtocol",
+      "authored": "InvocationProtocol"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.InvocationRequest",
+      "generated": "InvocationRequest",
+      "authored": "InvocationRequest"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.InvocationResponse",
+      "generated": "InvocationResponse",
+      "authored": "InvocationResponse"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.InvocationSuccess",
+      "generated": "InvocationSuccess",
+      "authored": "InvocationSuccess"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.LambdaManifest",
+      "generated": "LambdaManifest",
+      "authored": "LambdaManifest"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.LaunchArgument",
+      "generated": "LaunchArgument",
+      "authored": "LaunchArgument"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.OperatingSystem",
+      "generated": "OperatingSystem",
+      "authored": "OperatingSystem"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.Runtime",
+      "generated": "Runtime",
+      "authored": "Runtime"
+    }
+  ],
+  "ignore": {
+    "typespec": [],
+    "generated": [],
+    "authored": [
+      "Scintilla lambda public core schema catalog"
+    ]
+  }
+}
