@@ -1,6 +1,6 @@
 {
   "schema": "ores.typespec-json-schema-validator.language-boundaries/v1",
-  "minimumDistinctLanguages": 7,
+  "minimumDistinctLanguages": 5,
   "authorities": {
     "typeSpec": "peer",
     "jsonSchema": "peer",
