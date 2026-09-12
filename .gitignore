@@ -12,3 +12,6 @@ erl_crash.dump
 # Local temporary directories and Git worktrees (DEN-3956).
 tmp/
 temp/
+
+# typespec-json-schema-validator comparison evidence (generated; never an authority)
+.typespec-json-schema-validator/
