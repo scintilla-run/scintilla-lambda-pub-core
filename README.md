@@ -98,3 +98,19 @@ The repository-local gate compiles TypeSpec, verifies both schema authorities,
 tests every native binding, and validates the Zed package manifest. Hosted CI
 adds immutable TJSV current-input, consumer-admission, and cross-language
 runtime evidence gates.
+
+## Entrypoint and context ABI
+
+The process wire protocol remains `stdio-json-v1`. On top of that stable wire
+envelope, the native SDKs now expose a small user-code ABI:
+
+- context ABI: `scintilla.run/context/v1`;
+- canonical lambda shape: `run(payload, ctx)` (or the idiomatic trait/interface/behaviour equivalent);
+- `ctx` contains invocation identity, timeout, and optional trace context;
+- module descriptors distinguish `lambda`, `middleware`, and `extension` exports.
+
+The platform constructs the base context. Applications are intentionally free
+to wrap it with their own state, dependency injection, or middleware rather
+than having Scintilla standardize a large application framework. This layer is
+an SDK/entrypoint ABI derived from the existing invocation envelope, so it does
+not change the v1 wire schema.
