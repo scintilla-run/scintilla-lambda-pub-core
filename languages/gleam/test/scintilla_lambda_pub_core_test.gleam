@@ -67,7 +67,6 @@ pub fn counts_unicode_characters_at_contract_boundary_test() {
   |> should.be_ok
 }
 
-
 pub fn exports_context_abi_and_lambda_descriptor_test() {
   scintilla_lambda_pub_core.context_abi
   |> should.equal("scintilla.run/context/v1")
