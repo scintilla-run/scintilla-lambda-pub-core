@@ -3,7 +3,10 @@ import { readFileSync } from "node:fs";
 import { join } from "node:path";
 import test from "node:test";
 import {
+  CONTEXT_ABI,
   RUNTIMES,
+  invocationContext,
+  lambdaModuleDescriptor,
   assertLambdaManifest,
   invocationFailure,
   invocationSuccess,
@@ -69,4 +72,15 @@ test("rejects shell command strings", () => {
 test("builds discriminated invocation responses", () => {
   assert.equal(invocationSuccess("id-1", 42).result.status, "ok");
   assert.equal(invocationFailure("id-2", "busy", "busy", true).result.error.retryable, true);
+});
+
+
+test("builds a minimal versioned invocation context", () => {
+  const ctx = invocationContext({ invocationId: "id-ctx", timeoutMs: 2500, traceparent: "00-a-b-01" });
+  assert.equal(ctx.abi, CONTEXT_ABI);
+  assert.equal(ctx.invocationId, "id-ctx");
+  assert.equal(ctx.timeoutMs, 2500);
+  assert.equal(ctx.traceparent, "00-a-b-01");
+  assert.equal(lambdaModuleDescriptor().contextAbi, CONTEXT_ABI);
+  assert.throws(() => lambdaModuleDescriptor("bad export"), /invalid/);
 });
