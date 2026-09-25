@@ -117,3 +117,15 @@ func TestClassifiesSharedManifestFixtureCorpus(t *testing.T) {
 		}
 	}
 }
+
+func TestInvocationContextAndDescriptor(t *testing.T) {
+	req := InvocationRequest[int]{InvocationID: "go-ctx", TimeoutMS: 1200, Payload: 1}
+	ctx := req.Context()
+	if ctx.ABI != ContextABI || ctx.InvocationID != "go-ctx" || ctx.TimeoutMS != 1200 {
+		t.Fatalf("unexpected context: %#v", ctx)
+	}
+	descriptor := LambdaModuleDescriptor("run")
+	if descriptor.Kind != ModuleLambda || descriptor.ContextABI != ContextABI {
+		t.Fatalf("unexpected descriptor: %#v", descriptor)
+	}
+}
