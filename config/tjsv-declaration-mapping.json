@@ -22,6 +22,11 @@
       "authored": "ExecutableArtifact"
     },
     {
+      "typespec": "Scintilla.Lambda.V1.InvocationContext",
+      "generated": "InvocationContext",
+      "authored": "InvocationContext"
+    },
+    {
       "typespec": "Scintilla.Lambda.V1.InvocationError",
       "generated": "InvocationError",
       "authored": "InvocationError"
@@ -60,6 +65,16 @@
       "typespec": "Scintilla.Lambda.V1.LaunchArgument",
       "generated": "LaunchArgument",
       "authored": "LaunchArgument"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.ModuleDescriptor",
+      "generated": "ModuleDescriptor",
+      "authored": "ModuleDescriptor"
+    },
+    {
+      "typespec": "Scintilla.Lambda.V1.ModuleKind",
+      "generated": "ModuleKind",
+      "authored": "ModuleKind"
     },
     {
       "typespec": "Scintilla.Lambda.V1.OperatingSystem",
