@@ -1,0 +1,6 @@
+{
+  "abi": "scintilla.run/context/v1",
+  "invocationId": "ctx-1",
+  "timeoutMs": 30000,
+  "secret": "must-not-pass"
+}
