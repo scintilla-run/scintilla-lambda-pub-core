@@ -1,0 +1,5 @@
+{
+  "kind": "middleware",
+  "exportName": "auth.middleware",
+  "contextAbi": "scintilla.run/context/v1"
+}
