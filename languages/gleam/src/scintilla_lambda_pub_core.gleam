@@ -7,6 +7,38 @@ pub const api_version = "scintilla.run/lambda/v1"
 
 pub const invocation_protocol = "stdio-json-v1"
 
+pub const context_abi = "scintilla.run/context/v1"
+
+pub type ModuleKind {
+  LambdaModule
+  MiddlewareModule
+  ExtensionModule
+}
+
+pub type ModuleDescriptor {
+  ModuleDescriptor(kind: ModuleKind, export_name: String, context_abi: String)
+}
+
+pub type InvocationContext {
+  InvocationContext(
+    abi: String,
+    invocation_id: String,
+    timeout_ms: Int,
+    traceparent: Option(String),
+  )
+}
+
+pub type LambdaHandler(input, output) =
+  fn(input, InvocationContext) -> output
+
+pub fn lambda_module_descriptor(export_name: String) -> ModuleDescriptor {
+  ModuleDescriptor(
+    kind: LambdaModule,
+    export_name: export_name,
+    context_abi: context_abi,
+  )
+}
+
 pub type Runtime {
   Nodejs
   Bun
