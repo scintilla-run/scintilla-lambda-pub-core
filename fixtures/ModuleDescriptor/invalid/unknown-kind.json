@@ -1,0 +1,5 @@
+{
+  "kind": "service",
+  "exportName": "run",
+  "contextAbi": "scintilla.run/context/v1"
+}

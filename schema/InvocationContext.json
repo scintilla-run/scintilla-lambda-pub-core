@@ -1,0 +1,27 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://scintilla.run/schemas/lambda/v1/InvocationContext.json",
+  "title": "InvocationContext",
+  "type": "object",
+  "properties": {
+    "abi": {
+      "type": "string",
+      "const": "scintilla.run/context/v1"
+    },
+    "invocationId": {
+      "type": "string",
+      "pattern": "^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$"
+    },
+    "timeoutMs": {
+      "type": "integer",
+      "minimum": 1,
+      "maximum": 3600000
+    },
+    "traceparent": {
+      "type": "string",
+      "maxLength": 512
+    }
+  },
+  "required": ["abi", "invocationId", "timeoutMs"],
+  "unevaluatedProperties": { "not": {} }
+}

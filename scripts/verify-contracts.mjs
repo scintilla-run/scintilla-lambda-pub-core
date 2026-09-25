@@ -76,7 +76,7 @@ const canonicalAjv = validatorFor(canonicalDir);
 const generatedAjv = validatorFor(generatedDir);
 let fixtureCount = 0;
 
-for (const model of ["LambdaManifest", "InvocationRequest", "InvocationResponse"]) {
+for (const model of ["LambdaManifest", "InvocationRequest", "InvocationResponse", "InvocationContext", "ModuleDescriptor"]) {
   for (const expectation of ["valid", "invalid"]) {
     const directory = join(fixtureDir, model, expectation);
     for (const name of jsonFiles(directory)) {
@@ -257,8 +257,33 @@ const responseBoundaryCases = [
 ];
 verifySchemaBoundaryCases("InvocationResponse", responseBoundaryCases);
 
+const contextBase = readJson(
+  join(fixtureDir, "InvocationContext", "valid", "basic.json"),
+);
+const contextBoundaryCases = [
+  ["minimum context timeout", contextBase, (value) => { value.timeoutMs = 1; }, true],
+  ["zero context timeout", contextBase, (value) => { value.timeoutMs = 0; }, false],
+  ["wrong context ABI", contextBase, (value) => { value.abi = "scintilla.run/context/v0"; }, false],
+  ["unknown context field", contextBase, (value) => { value.secret = "no"; }, false],
+];
+verifySchemaBoundaryCases("InvocationContext", contextBoundaryCases);
+
+const moduleBase = readJson(
+  join(fixtureDir, "ModuleDescriptor", "valid", "lambda.json"),
+);
+const moduleBoundaryCases = [
+  ["lambda module", moduleBase, () => {}, true],
+  ["extension module", moduleBase, (value) => { value.kind = "extension"; }, true],
+  ["128-character export", moduleBase, (value) => { value.exportName = `a${"b".repeat(127)}`; }, true],
+  ["129-character export", moduleBase, (value) => { value.exportName = `a${"b".repeat(128)}`; }, false],
+  ["bad export whitespace", moduleBase, (value) => { value.exportName = "bad export"; }, false],
+  ["wrong module context ABI", moduleBase, (value) => { value.contextAbi = "scintilla.run/context/v0"; }, false],
+  ["unknown module kind", moduleBase, (value) => { value.kind = "service"; }, false],
+];
+verifySchemaBoundaryCases("ModuleDescriptor", moduleBoundaryCases);
+
 const boundaryCaseCount =
-  boundaryCases.length + requestBoundaryCases.length + responseBoundaryCases.length;
+  boundaryCases.length + requestBoundaryCases.length + responseBoundaryCases.length + contextBoundaryCases.length + moduleBoundaryCases.length;
 
 const declaredRuntimes = new Set(readJson(join(canonicalDir, "Runtime.json")).enum);
 const coveredRuntimes = new Set(

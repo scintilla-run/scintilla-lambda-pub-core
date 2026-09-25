@@ -15,7 +15,7 @@ concurrency:
 
 env:
   TJSV_REVISION: e29a91d7ef74e3b0613ea79e988bec4c467535d2
-  EXPECTED_DECLARATIONS: '["Scintilla.Lambda.V1.Architecture","Scintilla.Lambda.V1.ContainerArtifact","Scintilla.Lambda.V1.ContainerFormat","Scintilla.Lambda.V1.ExecutableArtifact","Scintilla.Lambda.V1.InvocationError","Scintilla.Lambda.V1.InvocationFailure","Scintilla.Lambda.V1.InvocationProtocol","Scintilla.Lambda.V1.InvocationRequest","Scintilla.Lambda.V1.InvocationResponse","Scintilla.Lambda.V1.InvocationSuccess","Scintilla.Lambda.V1.LambdaManifest","Scintilla.Lambda.V1.LaunchArgument","Scintilla.Lambda.V1.OperatingSystem","Scintilla.Lambda.V1.Runtime","Scintilla.Lambda.V1.SchemaCatalog"]'
+  EXPECTED_DECLARATIONS: '["Scintilla.Lambda.V1.Architecture","Scintilla.Lambda.V1.ContainerArtifact","Scintilla.Lambda.V1.ContainerFormat","Scintilla.Lambda.V1.ExecutableArtifact","Scintilla.Lambda.V1.InvocationContext","Scintilla.Lambda.V1.InvocationError","Scintilla.Lambda.V1.InvocationFailure","Scintilla.Lambda.V1.InvocationProtocol","Scintilla.Lambda.V1.InvocationRequest","Scintilla.Lambda.V1.InvocationResponse","Scintilla.Lambda.V1.InvocationSuccess","Scintilla.Lambda.V1.LambdaManifest","Scintilla.Lambda.V1.LaunchArgument","Scintilla.Lambda.V1.ModuleDescriptor","Scintilla.Lambda.V1.ModuleKind","Scintilla.Lambda.V1.OperatingSystem","Scintilla.Lambda.V1.Runtime","Scintilla.Lambda.V1.SchemaCatalog"]'
 
 jobs:
   contract:
