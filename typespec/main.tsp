@@ -16,6 +16,33 @@ enum Runtime {
   binary,
 }
 
+
+@jsonSchema
+enum ModuleKind {
+  lambda,
+  middleware,
+  extension,
+}
+
+@jsonSchema
+model InvocationContext {
+  abi: "scintilla.run/context/v1";
+  @pattern("^[A-Za-z0-9][A-Za-z0-9._:-]{0,127}$")
+  invocationId: string;
+  @minValue(1) @maxValue(3600000)
+  timeoutMs: uint32;
+  @maxLength(512)
+  traceparent?: string;
+}
+
+@jsonSchema
+model ModuleDescriptor {
+  kind: ModuleKind;
+  @pattern("^[A-Za-z_][A-Za-z0-9_.:-]{0,127}$")
+  exportName: string;
+  contextAbi: "scintilla.run/context/v1";
+}
+
 @jsonSchema
 enum ContainerFormat {
   docker,
@@ -133,4 +160,6 @@ union SchemaCatalog {
   manifest: LambdaManifest,
   request: InvocationRequest,
   response: InvocationResponse,
+  context: InvocationContext,
+  module: ModuleDescriptor,
 }
