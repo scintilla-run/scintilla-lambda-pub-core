@@ -12,6 +12,12 @@
     },
     {
       "$ref": "InvocationResponse.json"
+    },
+    {
+      "$ref": "InvocationContext.json"
+    },
+    {
+      "$ref": "ModuleDescriptor.json"
     }
   ]
 }
