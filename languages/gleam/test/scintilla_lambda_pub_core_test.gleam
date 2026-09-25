@@ -66,3 +66,15 @@ pub fn counts_unicode_characters_at_contract_boundary_test() {
   scintilla_lambda_pub_core.validate(bounded)
   |> should.be_ok
 }
+
+
+pub fn exports_context_abi_and_lambda_descriptor_test() {
+  scintilla_lambda_pub_core.context_abi
+  |> should.equal("scintilla.run/context/v1")
+  scintilla_lambda_pub_core.lambda_module_descriptor("run")
+  |> should.equal(scintilla_lambda_pub_core.ModuleDescriptor(
+    kind: scintilla_lambda_pub_core.LambdaModule,
+    export_name: "run",
+    context_abi: "scintilla.run/context/v1",
+  ))
+}
