@@ -349,6 +349,22 @@ mod tests {
     }
 
     #[test]
+    fn invocation_context_and_descriptor_pin_the_public_abi() {
+        let request = InvocationRequest {
+            protocol: INVOCATION_PROTOCOL.into(),
+            invocation_id: "rust-ctx".into(),
+            timeout_ms: 900,
+            traceparent: None,
+            payload: 1u8,
+        };
+        let context = request.context();
+        assert_eq!(context.abi, CONTEXT_ABI);
+        assert_eq!(context.invocation_id, "rust-ctx");
+        assert_eq!(context.timeout_ms, 900);
+        assert_eq!(ModuleDescriptor::lambda("run").context_abi, CONTEXT_ABI);
+    }
+
+    #[test]
     fn accepts_immutable_bare_executable() {
         assert_eq!(binary_manifest().validate(), Ok(()));
     }
