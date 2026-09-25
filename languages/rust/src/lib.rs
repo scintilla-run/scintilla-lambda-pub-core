@@ -2,6 +2,49 @@ use serde::{Deserialize, Serialize};
 
 pub const API_VERSION: &str = "scintilla.run/lambda/v1";
 pub const INVOCATION_PROTOCOL: &str = "stdio-json-v1";
+pub const CONTEXT_ABI: &str = "scintilla.run/context/v1";
+
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "lowercase")]
+pub enum ModuleKind {
+    Lambda,
+    Middleware,
+    Extension,
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct ModuleDescriptor {
+    pub kind: ModuleKind,
+    pub export_name: String,
+    pub context_abi: String,
+}
+
+impl ModuleDescriptor {
+    pub fn lambda(export_name: impl Into<String>) -> Self {
+        Self {
+            kind: ModuleKind::Lambda,
+            export_name: export_name.into(),
+            context_abi: CONTEXT_ABI.into(),
+        }
+    }
+}
+
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "camelCase", deny_unknown_fields)]
+pub struct InvocationContext {
+    pub abi: String,
+    pub invocation_id: String,
+    pub timeout_ms: u32,
+    #[serde(skip_serializing_if = "Option::is_none")]
+    pub traceparent: Option<String>,
+}
+
+pub trait LambdaHandler<Input, Output> {
+    type Error;
+
+    fn run(&self, payload: Input, ctx: &InvocationContext) -> Result<Output, Self::Error>;
+}
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
@@ -206,6 +249,17 @@ pub struct InvocationRequest<T = serde_json::Value> {
     pub payload: T,
 }
 
+impl<T> InvocationRequest<T> {
+    pub fn context(&self) -> InvocationContext {
+        InvocationContext {
+            abi: CONTEXT_ABI.into(),
+            invocation_id: self.invocation_id.clone(),
+            timeout_ms: self.timeout_ms,
+            traceparent: self.traceparent.clone(),
+        }
+    }
+}
+
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "camelCase", deny_unknown_fields)]
 pub struct InvocationError {
@@ -292,6 +346,22 @@ mod tests {
                 args: vec![],
             },
         }
+    }
+
+    #[test]
+    fn invocation_context_and_descriptor_pin_the_public_abi() {
+        let request = InvocationRequest {
+            protocol: INVOCATION_PROTOCOL.into(),
+            invocation_id: "rust-ctx".into(),
+            timeout_ms: 900,
+            traceparent: None,
+            payload: 1u8,
+        };
+        let context = request.context();
+        assert_eq!(context.abi, CONTEXT_ABI);
+        assert_eq!(context.invocation_id, "rust-ctx");
+        assert_eq!(context.timeout_ms, 900);
+        assert_eq!(ModuleDescriptor::lambda("run").context_abi, CONTEXT_ABI);
     }
 
     #[test]

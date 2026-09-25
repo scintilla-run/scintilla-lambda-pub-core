@@ -1,5 +1,7 @@
 export const API_VERSION: "scintilla.run/lambda/v1";
 export const INVOCATION_PROTOCOL: "stdio-json-v1";
+export const CONTEXT_ABI: "scintilla.run/context/v1";
+export const MODULE_KINDS: readonly ModuleKind[];
 export const RUNTIMES: readonly Runtime[];
 export const CONTAINER_FORMATS: readonly ContainerFormat[];
 export const OPERATING_SYSTEMS: readonly OperatingSystem[];
@@ -10,6 +12,20 @@ export type ContainerFormat = "docker" | "oci";
 export type OperatingSystem = "linux" | "darwin" | "windows" | "freebsd";
 export type Architecture = "amd64" | "arm64" | "armv7" | "riscv64";
 export type InvocationProtocol = "stdio-json-v1";
+export type ModuleKind = "lambda" | "middleware" | "extension";
+
+export interface ModuleDescriptor {
+  kind: ModuleKind;
+  exportName: string;
+  contextAbi: typeof CONTEXT_ABI;
+}
+
+export interface InvocationContext {
+  abi: typeof CONTEXT_ABI;
+  invocationId: string;
+  timeoutMs: number;
+  traceparent?: string;
+}
 
 export interface ContainerArtifact {
   kind: "container";
@@ -46,6 +62,14 @@ export interface InvocationRequest<T = unknown> {
   payload: T;
 }
 
+export type LambdaHandler<Input = unknown, Output = unknown> =
+  (payload: Input, ctx: InvocationContext) => Output | Promise<Output>;
+
+export interface LambdaModule<Input = unknown, Output = unknown> {
+  kind: "lambda";
+  run: LambdaHandler<Input, Output>;
+}
+
 export interface InvocationError {
   code: string;
   message: string;
@@ -66,6 +90,8 @@ export type ValidationResult =
   | { ok: true; value: LambdaManifest }
   | { ok: false; issues: string[] };
 
+export function invocationContext<T>(request: InvocationRequest<T>): InvocationContext;
+export function lambdaModuleDescriptor(exportName?: string): ModuleDescriptor;
 export function validateLambdaManifest(value: unknown): ValidationResult;
 export function assertLambdaManifest(value: unknown): LambdaManifest;
 export function invocationSuccess<T>(invocationId: string, payload: T): InvocationResponse<T>;

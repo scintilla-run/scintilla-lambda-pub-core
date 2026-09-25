@@ -1,10 +1,33 @@
 -module(scintilla_lambda_pub_core).
 
--export([api_version/0, invocation_protocol/0, runtimes/0, validate_manifest/1,
-         success/2, failure/4]).
+-export([api_version/0, invocation_protocol/0, context_abi/0, runtimes/0,
+         lambda_module_descriptor/1, invocation_context/3,
+         validate_manifest/1, success/2, failure/4]).
+-export_type([module_kind/0, module_descriptor/0, invocation_context/0]).
+
+-type module_kind() :: lambda | middleware | extension.
+-type module_descriptor() :: #{kind := module_kind(), export_name := binary(),
+                               context_abi := binary()}.
+-type invocation_context() :: #{abi := binary(), invocation_id := binary(),
+                                timeout_ms := non_neg_integer(),
+                                traceparent => binary()}.
+
+-callback run(term(), invocation_context()) -> term().
 
 api_version() -> <<"scintilla.run/lambda/v1">>.
 invocation_protocol() -> <<"stdio-json-v1">>.
+context_abi() -> <<"scintilla.run/context/v1">>.
+
+lambda_module_descriptor(ExportName) when is_binary(ExportName) ->
+    #{kind => lambda, export_name => ExportName, context_abi => context_abi()}.
+
+invocation_context(InvocationId, TimeoutMs, Traceparent)
+  when is_binary(InvocationId), is_integer(TimeoutMs), TimeoutMs >= 0 ->
+    Base = #{abi => context_abi(), invocation_id => InvocationId, timeout_ms => TimeoutMs},
+    case Traceparent of
+        undefined -> Base;
+        Value when is_binary(Value) -> Base#{traceparent => Value}
+    end.
 runtimes() -> [nodejs, bun, deno, rust, erlang, gleam, golang, binary].
 
 validate_manifest(Manifest) when is_map(Manifest) ->

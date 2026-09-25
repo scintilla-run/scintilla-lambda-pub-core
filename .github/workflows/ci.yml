@@ -14,7 +14,7 @@ concurrency:
   cancel-in-progress: true
 
 env:
-  TJSV_REVISION: a4b731fbf82c4d162abd74fd03758fa32bb76176
+  TJSV_REVISION: e29a91d7ef74e3b0613ea79e988bec4c467535d2
   EXPECTED_DECLARATIONS: '["Scintilla.Lambda.V1.Architecture","Scintilla.Lambda.V1.ContainerArtifact","Scintilla.Lambda.V1.ContainerFormat","Scintilla.Lambda.V1.ExecutableArtifact","Scintilla.Lambda.V1.InvocationError","Scintilla.Lambda.V1.InvocationFailure","Scintilla.Lambda.V1.InvocationProtocol","Scintilla.Lambda.V1.InvocationRequest","Scintilla.Lambda.V1.InvocationResponse","Scintilla.Lambda.V1.InvocationSuccess","Scintilla.Lambda.V1.LambdaManifest","Scintilla.Lambda.V1.LaunchArgument","Scintilla.Lambda.V1.OperatingSystem","Scintilla.Lambda.V1.Runtime","Scintilla.Lambda.V1.SchemaCatalog"]'
 
 jobs:
@@ -34,7 +34,7 @@ jobs:
       - name: Preserve the repository-local deterministic cross-check
         run: npm run verify
       - name: Enforce peer TypeSpec and JSON Schema authorities with immutable TJSV
-        uses: ORESoftware/typespec-json-schema-validator@a4b731fbf82c4d162abd74fd03758fa32bb76176
+        uses: ORESoftware/typespec-json-schema-validator@e29a91d7ef74e3b0613ea79e988bec4c467535d2
         with:
           typespec: typespec/main.tsp
           schema: schema
@@ -70,7 +70,7 @@ jobs:
           assert.deepEqual(contractIr.declarations.map(({ id }) => id), expected);
           NODE
       - name: Reverify retained Contract IR against current inputs and complete scope
-        uses: ORESoftware/typespec-json-schema-validator/actions/verify-contract-ir@a4b731fbf82c4d162abd74fd03758fa32bb76176
+        uses: ORESoftware/typespec-json-schema-validator/actions/verify-contract-ir@e29a91d7ef74e3b0613ea79e988bec4c467535d2
         with:
           contract_ir: .typespec-json-schema-validator/positive/contract-ir.json
           report: .typespec-json-schema-validator/positive/report.json
@@ -96,7 +96,7 @@ jobs:
           assert.equal(receipt.suppliedIrId, receipt.expectedIrId);
           NODE
       - name: Prove consumer admission rejects altered evidence and incomplete scope
-        uses: ORESoftware/typespec-json-schema-validator/actions/test-consumer-admission@a4b731fbf82c4d162abd74fd03758fa32bb76176
+        uses: ORESoftware/typespec-json-schema-validator/actions/test-consumer-admission@e29a91d7ef74e3b0613ea79e988bec4c467535d2
         with:
           contract_ir: .typespec-json-schema-validator/positive/contract-ir.json
           report: .typespec-json-schema-validator/positive/report.json
@@ -121,7 +121,7 @@ jobs:
       - name: Prove TJSV fails closed on peer-authority drift
         id: negative-control
         continue-on-error: true
-        uses: ORESoftware/typespec-json-schema-validator@a4b731fbf82c4d162abd74fd03758fa32bb76176
+        uses: ORESoftware/typespec-json-schema-validator@e29a91d7ef74e3b0613ea79e988bec4c467535d2
         with:
           typespec: typespec/main.tsp
           schema: tmp/tjsv-negative/schema
@@ -366,7 +366,7 @@ jobs:
         uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1
         with:
           repository: ORESoftware/typespec-json-schema-validator
-          ref: a4b731fbf82c4d162abd74fd03758fa32bb76176
+          ref: e29a91d7ef74e3b0613ea79e988bec4c467535d2
           path: tmp/tjsv
           persist-credentials: false
       - name: Install the immutable verifier toolchain

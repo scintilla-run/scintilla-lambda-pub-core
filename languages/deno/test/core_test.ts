@@ -1,5 +1,8 @@
 import {
+  CONTEXT_ABI,
   RUNTIMES,
+  invocationContext,
+  lambdaModuleDescriptor,
   invocationFailure,
   invocationSuccess,
   validateLambdaManifest,
@@ -43,4 +46,11 @@ Deno.test("builds both invocation result variants", () => {
     invocationFailure("deno-2", "busy", "busy", true).result.status === "error",
     "expected error result",
   );
+});
+
+
+Deno.test("exports the ctx ABI without imposing app middleware", () => {
+  const ctx = invocationContext({ invocationId: "deno-ctx", timeoutMs: 1000 });
+  assert(ctx.abi === CONTEXT_ABI, "expected context ABI");
+  assert(lambdaModuleDescriptor("run").contextAbi === CONTEXT_ABI, "expected descriptor ABI");
 });

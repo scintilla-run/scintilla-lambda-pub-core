@@ -15,7 +15,37 @@ import (
 const (
 	APIVersion         = "scintilla.run/lambda/v1"
 	InvocationProtocol = "stdio-json-v1"
+	ContextABI         = "scintilla.run/context/v1"
 )
+
+type ModuleKind string
+
+const (
+	ModuleLambda     ModuleKind = "lambda"
+	ModuleMiddleware ModuleKind = "middleware"
+	ModuleExtension  ModuleKind = "extension"
+)
+
+type ModuleDescriptor struct {
+	Kind       ModuleKind `json:"kind"`
+	ExportName string     `json:"exportName"`
+	ContextABI string     `json:"contextAbi"`
+}
+
+func LambdaModuleDescriptor(exportName string) ModuleDescriptor {
+	return ModuleDescriptor{Kind: ModuleLambda, ExportName: exportName, ContextABI: ContextABI}
+}
+
+type InvocationContext struct {
+	ABI          string `json:"abi"`
+	InvocationID string `json:"invocationId"`
+	TimeoutMS    uint32 `json:"timeoutMs"`
+	Traceparent  string `json:"traceparent,omitempty"`
+}
+
+type LambdaHandler[Input, Output any] interface {
+	Run(payload Input, ctx InvocationContext) (Output, error)
+}
 
 type Runtime string
 
@@ -251,6 +281,13 @@ type InvocationRequest[T any] struct {
 	TimeoutMS    uint32 `json:"timeoutMs"`
 	Traceparent  string `json:"traceparent,omitempty"`
 	Payload      T      `json:"payload"`
+}
+
+func (request InvocationRequest[T]) Context() InvocationContext {
+	return InvocationContext{
+		ABI: ContextABI, InvocationID: request.InvocationID,
+		TimeoutMS: request.TimeoutMS, Traceparent: request.Traceparent,
+	}
 }
 
 type InvocationError struct {

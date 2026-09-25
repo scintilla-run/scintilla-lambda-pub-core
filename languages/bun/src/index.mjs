@@ -1,5 +1,7 @@
 export const API_VERSION = "scintilla.run/lambda/v1";
 export const INVOCATION_PROTOCOL = "stdio-json-v1";
+export const CONTEXT_ABI = "scintilla.run/context/v1";
+export const MODULE_KINDS = Object.freeze(["lambda", "middleware", "extension"]);
 export const RUNTIMES = Object.freeze([
   "nodejs",
   "bun",
@@ -70,6 +72,23 @@ export function assertLambdaManifest(value) {
   const result = validateLambdaManifest(value);
   if (!result.ok) throw new TypeError(result.issues.join("; "));
   return result.value;
+}
+
+export function invocationContext(request) {
+  if (!isRecord(request)) throw new TypeError("invocation request must be an object");
+  return Object.freeze({
+    abi: CONTEXT_ABI,
+    invocationId: request.invocationId,
+    timeoutMs: request.timeoutMs,
+    ...(request.traceparent === undefined ? {} : { traceparent: request.traceparent }),
+  });
+}
+
+export function lambdaModuleDescriptor(exportName = "run") {
+  if (typeof exportName !== "string" || !/^[A-Za-z_][A-Za-z0-9_.:-]{0,127}$/.test(exportName)) {
+    throw new TypeError("lambda exportName is invalid");
+  }
+  return Object.freeze({ kind: "lambda", exportName, contextAbi: CONTEXT_ABI });
 }
 
 export const invocationSuccess = (invocationId, payload) => ({
