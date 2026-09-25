@@ -1,6 +1,9 @@
 import { expect, test } from "bun:test";
 import {
+  CONTEXT_ABI,
   RUNTIMES,
+  invocationContext,
+  lambdaModuleDescriptor,
   invocationFailure,
   invocationSuccess,
   validateLambdaManifest,
@@ -38,4 +41,11 @@ test("rejects commands outside the shared allowlist", () => {
 test("builds both invocation result variants", () => {
   expect(invocationSuccess("bun-1", 42).result.status).toBe("ok");
   expect(invocationFailure("bun-2", "busy", "busy", true).result.status).toBe("error");
+});
+
+
+test("exports the ctx ABI without imposing app middleware", () => {
+  const ctx = invocationContext({ invocationId: "bun-ctx", timeoutMs: 1000 });
+  expect(ctx.abi).toBe(CONTEXT_ABI);
+  expect(lambdaModuleDescriptor("run").contextAbi).toBe(CONTEXT_ABI);
 });
