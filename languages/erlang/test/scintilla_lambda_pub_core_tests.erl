@@ -51,3 +51,12 @@ context_contract_test() ->
                    Descriptor#{context_abi := <<"scintilla.run/context/v0">>})),
     Ctx = scintilla_lambda_pub_core:invocation_context(<<"id-ctx">>, 1000, undefined),
     ?assertMatch(#{abi := <<"scintilla.run/context/v1">>, invocation_id := <<"id-ctx">>, timeout_ms := 1000}, Ctx).
+
+application_context_test() ->
+    Invocation = scintilla_lambda_pub_core:invocation_context(<<"erl-app">>, 750, undefined),
+    Context = scintilla_lambda_pub_core:application_context(Invocation, #{repository => catalog}),
+    ?assertEqual(Invocation, scintilla_lambda_pub_core:context_invocation(Context)),
+    ?assertEqual(#{repository => catalog}, scintilla_lambda_pub_core:context_state(Context)),
+    ?assertError({unsupported_context_abi, <<"scintilla.run/context/v0">>},
+                 scintilla_lambda_pub_core:application_context(
+                   Invocation#{abi := <<"scintilla.run/context/v0">>}, #{})).
