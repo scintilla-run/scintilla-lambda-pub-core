@@ -114,3 +114,12 @@ to wrap it with their own state, dependency injection, or middleware rather
 than having Scintilla standardize a large application framework. This layer is
 an SDK/entrypoint ABI derived from the existing invocation envelope, so it does
 not change the v1 wire schema.
+
+
+### Module descriptor validation
+
+Native SDKs now validate module descriptors independently of the process wire
+schema. A descriptor must use one of the supported module kinds, a portable
+export name, and exactly `scintilla.run/context/v1`. This prevents stale or
+hand-constructed module metadata from silently widening the user-code ABI while
+keeping `stdio-json-v1` unchanged.
