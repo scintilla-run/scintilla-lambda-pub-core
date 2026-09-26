@@ -39,6 +39,17 @@ pub fn lambda_module_descriptor(export_name: String) -> ModuleDescriptor {
   )
 }
 
+pub fn validate_module_descriptor(
+  descriptor: ModuleDescriptor,
+) -> Result(ModuleDescriptor, ValidationError) {
+  let ModuleDescriptor(export_name: export_name, context_abi: abi, ..) = descriptor
+  case valid_module_export(export_name), abi == context_abi {
+    False, _ -> Error(InvalidModuleExport)
+    _, False -> Error(UnsupportedContextAbi)
+    True, True -> Ok(descriptor)
+  }
+}
+
 pub type Runtime {
   Nodejs
   Bun
@@ -109,6 +120,8 @@ pub type ValidationError {
   UnsafeExecutableCommand
   InvalidExecutableChecksum
   TooManyArguments
+  InvalidModuleExport
+  UnsupportedContextAbi
 }
 
 pub fn validate(
@@ -174,6 +187,24 @@ fn valid_runtime_version(version: Option(String)) -> Bool {
   case version {
     None -> True
     Some(value) -> string.length(value) >= 1 && string.length(value) <= 64
+  }
+}
+
+fn valid_module_export(value: String) -> Bool {
+  case string.to_graphemes(value) {
+    [first, ..rest] ->
+      string.length(value) <= 128
+      && string.contains(
+        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz_",
+        first,
+      )
+      && list.all(rest, fn(part) {
+        string.contains(
+          "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789_.:-",
+          part,
+        )
+      })
+    [] -> False
   }
 }
 
