@@ -47,8 +47,9 @@ invocation_context(InvocationId, TimeoutMs, Traceparent)
     end.
 
 application_context(Invocation, State) when is_map(Invocation) ->
+    ExpectedAbi = context_abi(),
     case maps:get(abi, Invocation, undefined) of
-        Abi when Abi =:= context_abi() -> #{invocation => Invocation, state => State};
+        ExpectedAbi -> #{invocation => Invocation, state => State};
         _ -> erlang:error({unsupported_context_abi, maps:get(abi, Invocation, undefined)})
     end.
 
