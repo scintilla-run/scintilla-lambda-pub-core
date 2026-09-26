@@ -2,8 +2,9 @@
 
 -export([api_version/0, invocation_protocol/0, context_abi/0, runtimes/0,
          lambda_module_descriptor/1, validate_module_descriptor/1, invocation_context/3,
+         application_context/2, context_invocation/1, context_state/1,
          validate_manifest/1, success/2, failure/4]).
--export_type([module_kind/0, module_descriptor/0, invocation_context/0]).
+-export_type([module_kind/0, module_descriptor/0, invocation_context/0, module_context/0]).
 
 -type module_kind() :: lambda | middleware | extension.
 -type module_descriptor() :: #{kind := module_kind(), export_name := binary(),
@@ -11,6 +12,7 @@
 -type invocation_context() :: #{abi := binary(), invocation_id := binary(),
                                 timeout_ms := non_neg_integer(),
                                 traceparent => binary()}.
+-type module_context() :: #{invocation := invocation_context(), state := term()}.
 
 -callback run(term(), invocation_context()) -> term().
 
@@ -43,6 +45,15 @@ invocation_context(InvocationId, TimeoutMs, Traceparent)
         undefined -> Base;
         Value when is_binary(Value) -> Base#{traceparent => Value}
     end.
+
+application_context(Invocation, State) when is_map(Invocation) ->
+    case maps:get(abi, Invocation, undefined) of
+        Abi when Abi =:= context_abi() -> #{invocation => Invocation, state => State};
+        _ -> erlang:error({unsupported_context_abi, maps:get(abi, Invocation, undefined)})
+    end.
+
+context_invocation(#{invocation := Invocation}) -> Invocation.
+context_state(#{state := State}) -> State.
 runtimes() -> [nodejs, bun, deno, rust, erlang, gleam, golang, binary].
 
 validate_manifest(Manifest) when is_map(Manifest) ->
