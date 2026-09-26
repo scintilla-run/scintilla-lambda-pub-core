@@ -1,7 +1,7 @@
 -module(scintilla_lambda_pub_core).
 
 -export([api_version/0, invocation_protocol/0, context_abi/0, runtimes/0,
-         lambda_module_descriptor/1, invocation_context/3,
+         lambda_module_descriptor/1, validate_module_descriptor/1, invocation_context/3,
          validate_manifest/1, success/2, failure/4]).
 -export_type([module_kind/0, module_descriptor/0, invocation_context/0]).
 
@@ -20,6 +20,21 @@ context_abi() -> <<"scintilla.run/context/v1">>.
 
 lambda_module_descriptor(ExportName) when is_binary(ExportName) ->
     #{kind => lambda, export_name => ExportName, context_abi => context_abi()}.
+
+validate_module_descriptor(#{kind := Kind, export_name := ExportName,
+                             context_abi := ContextAbi} = Descriptor) ->
+    case {only_keys(Descriptor, [kind, export_name, context_abi]),
+          lists:member(Kind, [lambda, middleware, extension]),
+          valid_module_export(ExportName),
+          ContextAbi =:= context_abi()} of
+        {true, true, true, true} -> ok;
+        {false, _, _, _} -> {error, unknown_module_descriptor_field};
+        {_, false, _, _} -> {error, unsupported_module_kind};
+        {_, _, false, _} -> {error, invalid_module_export};
+        {_, _, _, false} -> {error, unsupported_context_abi}
+    end;
+validate_module_descriptor(_) ->
+    {error, invalid_module_descriptor}.
 
 invocation_context(InvocationId, TimeoutMs, Traceparent)
   when is_binary(InvocationId), is_integer(TimeoutMs), TimeoutMs >= 0 ->
@@ -90,6 +105,11 @@ validate_artifact(_) ->
 
 only_keys(Map, Allowed) ->
     lists:all(fun(Key) -> lists:member(Key, Allowed) end, maps:keys(Map)).
+
+valid_module_export(Value) when is_binary(Value) ->
+    re:run(Value, <<"^[A-Za-z_][A-Za-z0-9_.:-]{0,127}$">>, [{capture, none}]) =:= match;
+valid_module_export(_) ->
+    false.
 
 valid_name(Value) when is_binary(Value) ->
     re:run(Value, <<"^[a-z][a-z0-9-]{0,62}$">>, [{capture, none}]) =:= match;

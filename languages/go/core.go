@@ -36,6 +36,19 @@ func LambdaModuleDescriptor(exportName string) ModuleDescriptor {
 	return ModuleDescriptor{Kind: ModuleLambda, ExportName: exportName, ContextABI: ContextABI}
 }
 
+func (descriptor ModuleDescriptor) Validate() error {
+	if descriptor.Kind != ModuleLambda && descriptor.Kind != ModuleMiddleware && descriptor.Kind != ModuleExtension {
+		return errors.New("unsupported module kind")
+	}
+	if !moduleExportPattern.MatchString(descriptor.ExportName) {
+		return errors.New("invalid module export name")
+	}
+	if descriptor.ContextABI != ContextABI {
+		return errors.New("unsupported context ABI")
+	}
+	return nil
+}
+
 type InvocationContext struct {
 	ABI          string `json:"abi"`
 	InvocationID string `json:"invocationId"`
@@ -163,10 +176,11 @@ func (manifest *LambdaManifest) UnmarshalJSON(data []byte) error {
 }
 
 var (
-	namePattern    = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
-	shaPattern     = regexp.MustCompile(`^[a-f0-9]{64}$`)
-	commandPattern = regexp.MustCompile(`^(\./|/)[A-Za-z0-9._/+-]+$`)
-	imagePattern   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,511}$`)
+	namePattern         = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
+	moduleExportPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_.:-]{0,127}$`)
+	shaPattern          = regexp.MustCompile(`^[a-f0-9]{64}$`)
+	commandPattern      = regexp.MustCompile(`^(\./|/)[A-Za-z0-9._/+-]+$`)
+	imagePattern        = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,511}$`)
 )
 
 func (manifest LambdaManifest) Validate() error {

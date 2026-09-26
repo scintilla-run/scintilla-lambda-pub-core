@@ -77,3 +77,18 @@ pub fn exports_context_abi_and_lambda_descriptor_test() {
     context_abi: "scintilla.run/context/v1",
   ))
 }
+
+pub fn validates_module_descriptor_contract_test() {
+  let valid = scintilla_lambda_pub_core.lambda_module_descriptor("run")
+  scintilla_lambda_pub_core.validate_module_descriptor(valid)
+  |> should.be_ok
+
+  let stale =
+    scintilla_lambda_pub_core.ModuleDescriptor(
+      kind: scintilla_lambda_pub_core.LambdaModule,
+      export_name: "run",
+      context_abi: "scintilla.run/context/v0",
+    )
+  scintilla_lambda_pub_core.validate_module_descriptor(stale)
+  |> should.equal(Error(scintilla_lambda_pub_core.UnsupportedContextAbi))
+}

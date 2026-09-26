@@ -6,6 +6,8 @@ import {
   CONTEXT_ABI,
   RUNTIMES,
   invocationContext,
+  validateModuleDescriptor,
+  assertModuleDescriptor,
   lambdaModuleDescriptor,
   assertLambdaManifest,
   invocationFailure,
@@ -83,4 +85,10 @@ test("builds a minimal versioned invocation context", () => {
   assert.equal(ctx.traceparent, "00-a-b-01");
   assert.equal(lambdaModuleDescriptor().contextAbi, CONTEXT_ABI);
   assert.throws(() => lambdaModuleDescriptor("bad export"), /invalid/);
+  assert.equal(validateModuleDescriptor(lambdaModuleDescriptor("run")).ok, true);
+  assert.equal(validateModuleDescriptor({ kind: "lambda", exportName: "run", contextAbi: "scintilla.run/context/v0" }).ok, false);
+  assert.throws(
+    () => assertModuleDescriptor({ kind: "lambda", exportName: "bad export", contextAbi: CONTEXT_ABI }),
+    /invalid/,
+  );
 });

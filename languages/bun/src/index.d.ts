@@ -86,11 +86,17 @@ export interface InvocationResponse<T = unknown> {
   result: InvocationResult<T>;
 }
 
+export type ModuleValidationResult =
+  | { ok: true; value: ModuleDescriptor }
+  | { ok: false; issues: string[] };
+
 export type ValidationResult =
   | { ok: true; value: LambdaManifest }
   | { ok: false; issues: string[] };
 
 export function invocationContext<T>(request: InvocationRequest<T>): InvocationContext;
+export function validateModuleDescriptor(value: unknown): ModuleValidationResult;
+export function assertModuleDescriptor(value: unknown): ModuleDescriptor;
 export function lambdaModuleDescriptor(exportName?: string): ModuleDescriptor;
 export function validateLambdaManifest(value: unknown): ValidationResult;
 export function assertLambdaManifest(value: unknown): LambdaManifest;
