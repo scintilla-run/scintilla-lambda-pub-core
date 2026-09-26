@@ -123,3 +123,7 @@ schema. A descriptor must use one of the supported module kinds, a portable
 export name, and exactly `scintilla.run/context/v1`. This prevents stale or
 hand-constructed module metadata from silently widening the user-code ABI while
 keeping `stdio-json-v1` unchanged.
+
+### Application-owned contexts
+
+The base `InvocationContext` remains the platform-owned ABI. Applications may wrap it with their own state instead of asking Scintilla to grow a framework-specific kitchen-sink context. The native SDKs expose an additive context composition seam: Rust uses `ModuleContext`, Go uses `InvocationContextProvider` / `ApplicationContext`, TypeScript/Bun/Deno use `ApplicationContext` plus `applicationContext(...)`, Gleam uses `ModuleContext(state)`, and Erlang uses the `application_context/2` map wrapper. Existing handlers that accept the base context are unchanged.

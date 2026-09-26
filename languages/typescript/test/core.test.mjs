@@ -4,6 +4,7 @@ import { join } from "node:path";
 import test from "node:test";
 import {
   CONTEXT_ABI,
+  applicationContext,
   RUNTIMES,
   invocationContext,
   validateModuleDescriptor,
@@ -90,5 +91,17 @@ test("builds a minimal versioned invocation context", () => {
   assert.throws(
     () => assertModuleDescriptor({ kind: "lambda", exportName: "bad export", contextAbi: CONTEXT_ABI }),
     /invalid/,
+  );
+});
+
+test("application context preserves the platform invocation", () => {
+  const invocation = invocationContext({ invocationId: "ts-app", timeoutMs: 500 });
+  const ctx = applicationContext(invocation, { repository: "catalog" });
+  assert.equal(ctx.invocation, invocation);
+  assert.equal(ctx.repository, "catalog");
+  assert.throws(() => applicationContext(invocation, { invocation: "spoof" }), /cannot override/);
+  assert.throws(
+    () => applicationContext({ ...invocation, abi: "scintilla.run/context/v0" }, {}),
+    /current Scintilla context ABI/,
   );
 });

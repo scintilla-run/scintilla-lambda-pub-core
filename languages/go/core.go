@@ -60,6 +60,33 @@ type LambdaHandler[Input, Output any] interface {
 	Run(payload Input, ctx InvocationContext) (Output, error)
 }
 
+// InvocationContextProvider is the minimal interface required from an
+// application-owned context.
+type InvocationContextProvider interface {
+	Invocation() InvocationContext
+}
+
+func (context InvocationContext) Invocation() InvocationContext {
+	return context
+}
+
+type ApplicationContext[State any] struct {
+	Base  InvocationContext
+	State State
+}
+
+func NewApplicationContext[State any](base InvocationContext, state State) ApplicationContext[State] {
+	return ApplicationContext[State]{Base: base, State: state}
+}
+
+func (context ApplicationContext[State]) Invocation() InvocationContext {
+	return context.Base
+}
+
+type ContextualLambdaHandler[Input, Output any, Context InvocationContextProvider] interface {
+	Run(payload Input, ctx Context) (Output, error)
+}
+
 type Runtime string
 
 const (

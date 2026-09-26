@@ -84,6 +84,17 @@ export function invocationContext(request) {
   });
 }
 
+export function applicationContext(invocation, state) {
+  if (!isRecord(invocation) || invocation.abi !== CONTEXT_ABI) {
+    throw new TypeError("invocation must use the current Scintilla context ABI");
+  }
+  if (!isRecord(state)) throw new TypeError("application context state must be an object");
+  if (Object.prototype.hasOwnProperty.call(state, "invocation")) {
+    throw new TypeError("application context state cannot override invocation");
+  }
+  return Object.freeze({ ...state, invocation });
+}
+
 export function validateModuleDescriptor(value) {
   const issues = [];
   if (!isRecord(value)) return { ok: false, issues: ["module descriptor must be an object"] };
