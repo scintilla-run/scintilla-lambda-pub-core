@@ -62,6 +62,27 @@ pub trait LambdaHandler<Input, Output> {
     fn run(&self, payload: Input, ctx: &InvocationContext) -> Result<Output, Self::Error>;
 }
 
+/// Base interface for application-owned contexts. Richer contexts keep their
+/// own dependencies/state while exposing the immutable Scintilla invocation
+/// metadata required by framework/runtime code.
+pub trait ModuleContext {
+    fn invocation(&self) -> &InvocationContext;
+}
+
+impl ModuleContext for InvocationContext {
+    fn invocation(&self) -> &InvocationContext {
+        self
+    }
+}
+
+/// Additive handler shape for applications that wrap the platform context.
+pub trait ContextualLambdaHandler<Input, Output> {
+    type Error;
+    type Context: ModuleContext;
+
+    fn run(&self, payload: Input, ctx: &Self::Context) -> Result<Output, Self::Error>;
+}
+
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(rename_all = "lowercase")]
 pub enum Runtime {
@@ -372,6 +393,30 @@ mod tests {
                 args: vec![],
             },
         }
+    }
+
+    #[test]
+    fn application_context_can_wrap_platform_context() {
+        struct AppContext {
+            invocation: InvocationContext,
+            repository: &'static str,
+        }
+        impl ModuleContext for AppContext {
+            fn invocation(&self) -> &InvocationContext {
+                &self.invocation
+            }
+        }
+        let context = AppContext {
+            invocation: InvocationContext {
+                abi: CONTEXT_ABI.into(),
+                invocation_id: "ctx-app".into(),
+                timeout_ms: 500,
+                traceparent: None,
+            },
+            repository: "catalog",
+        };
+        assert_eq!(context.invocation().invocation_id, "ctx-app");
+        assert_eq!(context.repository, "catalog");
     }
 
     #[test]
