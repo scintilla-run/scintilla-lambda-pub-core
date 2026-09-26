@@ -36,6 +36,19 @@ func LambdaModuleDescriptor(exportName string) ModuleDescriptor {
 	return ModuleDescriptor{Kind: ModuleLambda, ExportName: exportName, ContextABI: ContextABI}
 }
 
+func (descriptor ModuleDescriptor) Validate() error {
+	if descriptor.Kind != ModuleLambda && descriptor.Kind != ModuleMiddleware && descriptor.Kind != ModuleExtension {
+		return errors.New("unsupported module kind")
+	}
+	if !moduleExportPattern.MatchString(descriptor.ExportName) {
+		return errors.New("invalid module export name")
+	}
+	if descriptor.ContextABI != ContextABI {
+		return errors.New("unsupported context ABI")
+	}
+	return nil
+}
+
 type InvocationContext struct {
 	ABI          string `json:"abi"`
 	InvocationID string `json:"invocationId"`
@@ -163,7 +176,364 @@ func (manifest *LambdaManifest) UnmarshalJSON(data []byte) error {
 }
 
 var (
-	namePattern    = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}$`)
+	namePattern         = regexp.MustCompile(`^[a-z][a-z0-9-]{0,62}// Package lambdacore defines the portable Scintilla lambda contract.
+package lambdacore
+
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"regexp"
+	"strings"
+	"unicode/utf8"
+)
+
+const (
+	APIVersion         = "scintilla.run/lambda/v1"
+	InvocationProtocol = "stdio-json-v1"
+	ContextABI         = "scintilla.run/context/v1"
+)
+
+type ModuleKind string
+
+const (
+	ModuleLambda     ModuleKind = "lambda"
+	ModuleMiddleware ModuleKind = "middleware"
+	ModuleExtension  ModuleKind = "extension"
+)
+
+type ModuleDescriptor struct {
+	Kind       ModuleKind `json:"kind"`
+	ExportName string     `json:"exportName"`
+	ContextABI string     `json:"contextAbi"`
+}
+
+func LambdaModuleDescriptor(exportName string) ModuleDescriptor {
+	return ModuleDescriptor{Kind: ModuleLambda, ExportName: exportName, ContextABI: ContextABI}
+}
+
+func (descriptor ModuleDescriptor) Validate() error {
+	if descriptor.Kind != ModuleLambda && descriptor.Kind != ModuleMiddleware && descriptor.Kind != ModuleExtension {
+		return errors.New("unsupported module kind")
+	}
+	if !moduleExportPattern.MatchString(descriptor.ExportName) {
+		return errors.New("invalid module export name")
+	}
+	if descriptor.ContextABI != ContextABI {
+		return errors.New("unsupported context ABI")
+	}
+	return nil
+}
+
+type InvocationContext struct {
+	ABI          string `json:"abi"`
+	InvocationID string `json:"invocationId"`
+	TimeoutMS    uint32 `json:"timeoutMs"`
+	Traceparent  string `json:"traceparent,omitempty"`
+}
+
+type LambdaHandler[Input, Output any] interface {
+	Run(payload Input, ctx InvocationContext) (Output, error)
+}
+
+type Runtime string
+
+const (
+	RuntimeNodeJS Runtime = "nodejs"
+	RuntimeBun    Runtime = "bun"
+	RuntimeDeno   Runtime = "deno"
+	RuntimeRust   Runtime = "rust"
+	RuntimeErlang Runtime = "erlang"
+	RuntimeGleam  Runtime = "gleam"
+	RuntimeGolang Runtime = "golang"
+	RuntimeBinary Runtime = "binary"
+)
+
+var validRuntimes = map[Runtime]struct{}{
+	RuntimeNodeJS: {}, RuntimeBun: {}, RuntimeDeno: {}, RuntimeRust: {},
+	RuntimeErlang: {}, RuntimeGleam: {}, RuntimeGolang: {}, RuntimeBinary: {},
+}
+
+type Artifact struct {
+	Kind         string   `json:"kind"`
+	Format       string   `json:"format,omitempty"`
+	Image        string   `json:"image,omitempty"`
+	Digest       string   `json:"digest,omitempty"`
+	Entrypoint   []string `json:"entrypoint,omitempty"`
+	Command      string   `json:"command,omitempty"`
+	SHA256       string   `json:"sha256,omitempty"`
+	OS           string   `json:"os,omitempty"`
+	Architecture string   `json:"architecture,omitempty"`
+	Args         []string `json:"args,omitempty"`
+}
+
+// UnmarshalJSON keeps the discriminated artifact union fail-closed. A field
+// from the other variant is invalid even when its JSON value is empty.
+func (artifact *Artifact) UnmarshalJSON(data []byte) error {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return fmt.Errorf("decode artifact fields: %w", err)
+	}
+
+	var discriminator struct {
+		Kind string `json:"kind"`
+	}
+	if err := json.Unmarshal(data, &discriminator); err != nil {
+		return fmt.Errorf("decode artifact kind: %w", err)
+	}
+
+	allowed := map[string]struct{}{"kind": {}}
+	switch discriminator.Kind {
+	case "container":
+		for _, field := range []string{"format", "image", "digest", "entrypoint"} {
+			allowed[field] = struct{}{}
+		}
+	case "executable":
+		for _, field := range []string{"command", "sha256", "os", "architecture", "args"} {
+			allowed[field] = struct{}{}
+		}
+	default:
+		for _, field := range []string{"format", "image", "digest", "entrypoint", "command", "sha256", "os", "architecture", "args"} {
+			allowed[field] = struct{}{}
+		}
+	}
+	for field := range fields {
+		if _, ok := allowed[field]; !ok {
+			return fmt.Errorf("unknown field %q for %s artifact", field, discriminator.Kind)
+		}
+	}
+
+	type artifactAlias Artifact
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	var decoded artifactAlias
+	if err := decoder.Decode(&decoded); err != nil {
+		return fmt.Errorf("decode artifact: %w", err)
+	}
+	*artifact = Artifact(decoded)
+	return nil
+}
+
+type LambdaManifest struct {
+	APIVersion            string   `json:"apiVersion"`
+	Name                  string   `json:"name"`
+	Runtime               Runtime  `json:"runtime"`
+	Protocol              string   `json:"protocol"`
+	Handler               string   `json:"handler"`
+	RuntimeVersion        string   `json:"runtimeVersion,omitempty"`
+	Artifact              Artifact `json:"artifact"`
+	runtimeVersionPresent bool
+}
+
+// UnmarshalJSON preserves whether the optional runtimeVersion property was
+// present so an explicitly empty value cannot masquerade as omission.
+func (manifest *LambdaManifest) UnmarshalJSON(data []byte) error {
+	type manifestAlias LambdaManifest
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	var decoded manifestAlias
+	if err := decoder.Decode(&decoded); err != nil {
+		return err
+	}
+
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	if raw, present := fields["runtimeVersion"]; present {
+		var version string
+		if err := json.Unmarshal(raw, &version); err != nil {
+			return errors.New("runtimeVersion must be a string")
+		}
+		decoded.runtimeVersionPresent = true
+	}
+	*manifest = LambdaManifest(decoded)
+	return nil
+}
+
+var (
+	)
+	moduleExportPattern = regexp.MustCompile(`^[A-Za-z_][A-Za-z0-9_.:-]{0,127}// Package lambdacore defines the portable Scintilla lambda contract.
+package lambdacore
+
+import (
+	"bytes"
+	"encoding/json"
+	"errors"
+	"fmt"
+	"io"
+	"regexp"
+	"strings"
+	"unicode/utf8"
+)
+
+const (
+	APIVersion         = "scintilla.run/lambda/v1"
+	InvocationProtocol = "stdio-json-v1"
+	ContextABI         = "scintilla.run/context/v1"
+)
+
+type ModuleKind string
+
+const (
+	ModuleLambda     ModuleKind = "lambda"
+	ModuleMiddleware ModuleKind = "middleware"
+	ModuleExtension  ModuleKind = "extension"
+)
+
+type ModuleDescriptor struct {
+	Kind       ModuleKind `json:"kind"`
+	ExportName string     `json:"exportName"`
+	ContextABI string     `json:"contextAbi"`
+}
+
+func LambdaModuleDescriptor(exportName string) ModuleDescriptor {
+	return ModuleDescriptor{Kind: ModuleLambda, ExportName: exportName, ContextABI: ContextABI}
+}
+
+func (descriptor ModuleDescriptor) Validate() error {
+	if descriptor.Kind != ModuleLambda && descriptor.Kind != ModuleMiddleware && descriptor.Kind != ModuleExtension {
+		return errors.New("unsupported module kind")
+	}
+	if !moduleExportPattern.MatchString(descriptor.ExportName) {
+		return errors.New("invalid module export name")
+	}
+	if descriptor.ContextABI != ContextABI {
+		return errors.New("unsupported context ABI")
+	}
+	return nil
+}
+
+type InvocationContext struct {
+	ABI          string `json:"abi"`
+	InvocationID string `json:"invocationId"`
+	TimeoutMS    uint32 `json:"timeoutMs"`
+	Traceparent  string `json:"traceparent,omitempty"`
+}
+
+type LambdaHandler[Input, Output any] interface {
+	Run(payload Input, ctx InvocationContext) (Output, error)
+}
+
+type Runtime string
+
+const (
+	RuntimeNodeJS Runtime = "nodejs"
+	RuntimeBun    Runtime = "bun"
+	RuntimeDeno   Runtime = "deno"
+	RuntimeRust   Runtime = "rust"
+	RuntimeErlang Runtime = "erlang"
+	RuntimeGleam  Runtime = "gleam"
+	RuntimeGolang Runtime = "golang"
+	RuntimeBinary Runtime = "binary"
+)
+
+var validRuntimes = map[Runtime]struct{}{
+	RuntimeNodeJS: {}, RuntimeBun: {}, RuntimeDeno: {}, RuntimeRust: {},
+	RuntimeErlang: {}, RuntimeGleam: {}, RuntimeGolang: {}, RuntimeBinary: {},
+}
+
+type Artifact struct {
+	Kind         string   `json:"kind"`
+	Format       string   `json:"format,omitempty"`
+	Image        string   `json:"image,omitempty"`
+	Digest       string   `json:"digest,omitempty"`
+	Entrypoint   []string `json:"entrypoint,omitempty"`
+	Command      string   `json:"command,omitempty"`
+	SHA256       string   `json:"sha256,omitempty"`
+	OS           string   `json:"os,omitempty"`
+	Architecture string   `json:"architecture,omitempty"`
+	Args         []string `json:"args,omitempty"`
+}
+
+// UnmarshalJSON keeps the discriminated artifact union fail-closed. A field
+// from the other variant is invalid even when its JSON value is empty.
+func (artifact *Artifact) UnmarshalJSON(data []byte) error {
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return fmt.Errorf("decode artifact fields: %w", err)
+	}
+
+	var discriminator struct {
+		Kind string `json:"kind"`
+	}
+	if err := json.Unmarshal(data, &discriminator); err != nil {
+		return fmt.Errorf("decode artifact kind: %w", err)
+	}
+
+	allowed := map[string]struct{}{"kind": {}}
+	switch discriminator.Kind {
+	case "container":
+		for _, field := range []string{"format", "image", "digest", "entrypoint"} {
+			allowed[field] = struct{}{}
+		}
+	case "executable":
+		for _, field := range []string{"command", "sha256", "os", "architecture", "args"} {
+			allowed[field] = struct{}{}
+		}
+	default:
+		for _, field := range []string{"format", "image", "digest", "entrypoint", "command", "sha256", "os", "architecture", "args"} {
+			allowed[field] = struct{}{}
+		}
+	}
+	for field := range fields {
+		if _, ok := allowed[field]; !ok {
+			return fmt.Errorf("unknown field %q for %s artifact", field, discriminator.Kind)
+		}
+	}
+
+	type artifactAlias Artifact
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	var decoded artifactAlias
+	if err := decoder.Decode(&decoded); err != nil {
+		return fmt.Errorf("decode artifact: %w", err)
+	}
+	*artifact = Artifact(decoded)
+	return nil
+}
+
+type LambdaManifest struct {
+	APIVersion            string   `json:"apiVersion"`
+	Name                  string   `json:"name"`
+	Runtime               Runtime  `json:"runtime"`
+	Protocol              string   `json:"protocol"`
+	Handler               string   `json:"handler"`
+	RuntimeVersion        string   `json:"runtimeVersion,omitempty"`
+	Artifact              Artifact `json:"artifact"`
+	runtimeVersionPresent bool
+}
+
+// UnmarshalJSON preserves whether the optional runtimeVersion property was
+// present so an explicitly empty value cannot masquerade as omission.
+func (manifest *LambdaManifest) UnmarshalJSON(data []byte) error {
+	type manifestAlias LambdaManifest
+	decoder := json.NewDecoder(bytes.NewReader(data))
+	decoder.DisallowUnknownFields()
+	var decoded manifestAlias
+	if err := decoder.Decode(&decoded); err != nil {
+		return err
+	}
+
+	var fields map[string]json.RawMessage
+	if err := json.Unmarshal(data, &fields); err != nil {
+		return err
+	}
+	if raw, present := fields["runtimeVersion"]; present {
+		var version string
+		if err := json.Unmarshal(raw, &version); err != nil {
+			return errors.New("runtimeVersion must be a string")
+		}
+		decoded.runtimeVersionPresent = true
+	}
+	*manifest = LambdaManifest(decoded)
+	return nil
+}
+
+var (
+	)
 	shaPattern     = regexp.MustCompile(`^[a-f0-9]{64}$`)
 	commandPattern = regexp.MustCompile(`^(\./|/)[A-Za-z0-9._/+-]+$`)
 	imagePattern   = regexp.MustCompile(`^[A-Za-z0-9][A-Za-z0-9._:/@-]{0,511}$`)
