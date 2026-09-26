@@ -45,5 +45,9 @@ context_contract_test() ->
     ?assertEqual(<<"scintilla.run/context/v1">>, scintilla_lambda_pub_core:context_abi()),
     Descriptor = scintilla_lambda_pub_core:lambda_module_descriptor(<<"run">>),
     ?assertMatch(#{kind := lambda, context_abi := <<"scintilla.run/context/v1">>}, Descriptor),
+    ?assertEqual(ok, scintilla_lambda_pub_core:validate_module_descriptor(Descriptor)),
+    ?assertEqual({error, unsupported_context_abi},
+                 scintilla_lambda_pub_core:validate_module_descriptor(
+                   Descriptor#{context_abi := <<"scintilla.run/context/v0">>})),
     Ctx = scintilla_lambda_pub_core:invocation_context(<<"id-ctx">>, 1000, undefined),
     ?assertMatch(#{abi := <<"scintilla.run/context/v1">>, invocation_id := <<"id-ctx">>, timeout_ms := 1000}, Ctx).
