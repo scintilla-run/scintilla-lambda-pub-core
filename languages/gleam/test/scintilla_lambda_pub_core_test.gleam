@@ -78,7 +78,6 @@ pub fn exports_context_abi_and_lambda_descriptor_test() {
   ))
 }
 
-
 pub fn validates_module_descriptor_contract_test() {
   let valid = scintilla_lambda_pub_core.lambda_module_descriptor("run")
   scintilla_lambda_pub_core.validate_module_descriptor(valid)
