@@ -42,7 +42,8 @@ pub fn lambda_module_descriptor(export_name: String) -> ModuleDescriptor {
 pub fn validate_module_descriptor(
   descriptor: ModuleDescriptor,
 ) -> Result(ModuleDescriptor, ValidationError) {
-  let ModuleDescriptor(export_name: export_name, context_abi: abi, ..) = descriptor
+  let ModuleDescriptor(export_name: export_name, context_abi: abi, ..) =
+    descriptor
   case valid_module_export(export_name), abi == context_abi {
     False, _ -> Error(InvalidModuleExport)
     _, False -> Error(UnsupportedContextAbi)
