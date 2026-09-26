@@ -28,6 +28,22 @@ impl ModuleDescriptor {
             context_abi: CONTEXT_ABI.into(),
         }
     }
+
+    pub fn validate(&self) -> Result<(), ValidationError> {
+        if !valid_module_export(&self.export_name) {
+            return Err(ValidationError::new(
+                "exportName",
+                "module export name is invalid",
+            ));
+        }
+        if self.context_abi != CONTEXT_ABI {
+            return Err(ValidationError::new(
+                "contextAbi",
+                "unsupported context ABI",
+            ));
+        }
+        Ok(())
+    }
 }
 
 #[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
@@ -283,6 +299,16 @@ pub struct InvocationResponse<T = serde_json::Value> {
     pub result: InvocationResult<T>,
 }
 
+fn valid_module_export(value: &str) -> bool {
+    let bytes = value.as_bytes();
+    !bytes.is_empty()
+        && bytes.len() <= 128
+        && (bytes[0].is_ascii_alphabetic() || bytes[0] == b'_')
+        && bytes[1..]
+            .iter()
+            .all(|byte| byte.is_ascii_alphanumeric() || b"_.:-".contains(byte))
+}
+
 fn valid_name(value: &str) -> bool {
     let bytes = value.as_bytes();
     !bytes.is_empty()
@@ -361,7 +387,13 @@ mod tests {
         assert_eq!(context.abi, CONTEXT_ABI);
         assert_eq!(context.invocation_id, "rust-ctx");
         assert_eq!(context.timeout_ms, 900);
-        assert_eq!(ModuleDescriptor::lambda("run").context_abi, CONTEXT_ABI);
+        let descriptor = ModuleDescriptor::lambda("run");
+        assert_eq!(descriptor.context_abi, CONTEXT_ABI);
+        assert_eq!(descriptor.validate(), Ok(()));
+
+        let mut stale = descriptor.clone();
+        stale.context_abi = "scintilla.run/context/v0".into();
+        assert_eq!(stale.validate().unwrap_err().path, "contextAbi");
     }
 
     #[test]
