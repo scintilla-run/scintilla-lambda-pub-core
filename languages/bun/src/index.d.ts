@@ -27,6 +27,13 @@ export interface InvocationContext {
   traceparent?: string;
 }
 
+export interface ModuleContext {
+  readonly invocation: InvocationContext;
+}
+
+export type ApplicationContext<State extends object = Record<string, never>> =
+  Readonly<State & ModuleContext>;
+
 export interface ContainerArtifact {
   kind: "container";
   format: ContainerFormat;
@@ -65,6 +72,12 @@ export interface InvocationRequest<T = unknown> {
 export type LambdaHandler<Input = unknown, Output = unknown> =
   (payload: Input, ctx: InvocationContext) => Output | Promise<Output>;
 
+export type ContextualLambdaHandler<
+  Input = unknown,
+  Output = unknown,
+  Context extends ModuleContext = ModuleContext,
+> = (payload: Input, ctx: Context) => Output | Promise<Output>;
+
 export interface LambdaModule<Input = unknown, Output = unknown> {
   kind: "lambda";
   run: LambdaHandler<Input, Output>;
@@ -95,6 +108,7 @@ export type ValidationResult =
   | { ok: false; issues: string[] };
 
 export function invocationContext<T>(request: InvocationRequest<T>): InvocationContext;
+export function applicationContext<State extends object>(invocation: InvocationContext, state: State): ApplicationContext<State>;
 export function validateModuleDescriptor(value: unknown): ModuleValidationResult;
 export function assertModuleDescriptor(value: unknown): ModuleDescriptor;
 export function lambdaModuleDescriptor(exportName?: string): ModuleDescriptor;
