@@ -84,6 +84,27 @@ export function invocationContext(request) {
   });
 }
 
+export function validateModuleDescriptor(value) {
+  const issues = [];
+  if (!isRecord(value)) return { ok: false, issues: ["module descriptor must be an object"] };
+  const allowed = new Set(["kind", "exportName", "contextAbi"]);
+  for (const key of Object.keys(value)) {
+    if (!allowed.has(key)) issues.push(`unknown module descriptor field: ${key}`);
+  }
+  if (!MODULE_KINDS.includes(value.kind)) issues.push("module kind is unsupported");
+  if (typeof value.exportName !== "string" || !/^[A-Za-z_][A-Za-z0-9_.:-]{0,127}$/.test(value.exportName)) {
+    issues.push("module exportName is invalid");
+  }
+  if (value.contextAbi !== CONTEXT_ABI) issues.push(`contextAbi must be ${CONTEXT_ABI}`);
+  return issues.length === 0 ? { ok: true, value } : { ok: false, issues };
+}
+
+export function assertModuleDescriptor(value) {
+  const result = validateModuleDescriptor(value);
+  if (!result.ok) throw new TypeError(result.issues.join("; "));
+  return result.value;
+}
+
 export function lambdaModuleDescriptor(exportName = "run") {
   if (typeof exportName !== "string" || !/^[A-Za-z_][A-Za-z0-9_.:-]{0,127}$/.test(exportName)) {
     throw new TypeError("lambda exportName is invalid");
