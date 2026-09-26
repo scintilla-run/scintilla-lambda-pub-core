@@ -31,6 +31,30 @@ pub type InvocationContext {
 pub type LambdaHandler(input, output) =
   fn(input, InvocationContext) -> output
 
+pub type ModuleContext(state) {
+  ModuleContext(invocation: InvocationContext, state: state)
+}
+
+pub type ContextualLambdaHandler(input, output, state) =
+  fn(input, ModuleContext(state)) -> output
+
+pub fn application_context(
+  invocation: InvocationContext,
+  state: state,
+) -> ModuleContext(state) {
+  ModuleContext(invocation: invocation, state: state)
+}
+
+pub fn context_invocation(context: ModuleContext(state)) -> InvocationContext {
+  let ModuleContext(invocation: invocation, ..) = context
+  invocation
+}
+
+pub fn context_state(context: ModuleContext(state)) -> state {
+  let ModuleContext(state: state, ..) = context
+  state
+}
+
 pub fn lambda_module_descriptor(export_name: String) -> ModuleDescriptor {
   ModuleDescriptor(
     kind: LambdaModule,
