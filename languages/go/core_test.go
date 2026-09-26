@@ -136,3 +136,11 @@ func TestInvocationContextAndDescriptor(t *testing.T) {
 		t.Fatal("expected stale context ABI to be rejected")
 	}
 }
+
+func TestApplicationContextPreservesInvocation(t *testing.T) {
+	base := InvocationContext{ABI: ContextABI, InvocationID: "go-app", TimeoutMS: 750}
+	ctx := NewApplicationContext(base, struct{ Repository string }{Repository: "catalog"})
+	if ctx.Invocation().InvocationID != "go-app" || ctx.State.Repository != "catalog" {
+		t.Fatalf("unexpected application context: %#v", ctx)
+	}
+}
