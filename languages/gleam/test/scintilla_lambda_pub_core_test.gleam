@@ -94,12 +94,13 @@ pub fn validates_module_descriptor_contract_test() {
 }
 
 pub fn application_context_preserves_invocation_test() {
-  let invocation = scintilla_lambda_pub_core.InvocationContext(
-    abi: scintilla_lambda_pub_core.context_abi,
-    invocation_id: "gleam-app",
-    timeout_ms: 750,
-    traceparent: None,
-  )
+  let invocation =
+    scintilla_lambda_pub_core.InvocationContext(
+      abi: scintilla_lambda_pub_core.context_abi,
+      invocation_id: "gleam-app",
+      timeout_ms: 750,
+      traceparent: None,
+    )
   let context =
     scintilla_lambda_pub_core.application_context(invocation, "catalog")
   scintilla_lambda_pub_core.context_invocation(context)
