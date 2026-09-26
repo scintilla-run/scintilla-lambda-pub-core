@@ -100,7 +100,8 @@ pub fn application_context_preserves_invocation_test() {
     timeout_ms: 750,
     traceparent: None,
   )
-  let context = scintilla_lambda_pub_core.application_context(invocation, "catalog")
+  let context =
+    scintilla_lambda_pub_core.application_context(invocation, "catalog")
   scintilla_lambda_pub_core.context_invocation(context)
   |> should.equal(invocation)
   scintilla_lambda_pub_core.context_state(context)
