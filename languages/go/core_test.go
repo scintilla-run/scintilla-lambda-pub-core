@@ -128,4 +128,11 @@ func TestInvocationContextAndDescriptor(t *testing.T) {
 	if descriptor.Kind != ModuleLambda || descriptor.ContextABI != ContextABI {
 		t.Fatalf("unexpected descriptor: %#v", descriptor)
 	}
+	if err := descriptor.Validate(); err != nil {
+		t.Fatalf("expected descriptor to validate: %v", err)
+	}
+	descriptor.ContextABI = "scintilla.run/context/v0"
+	if err := descriptor.Validate(); err == nil {
+		t.Fatal("expected stale context ABI to be rejected")
+	}
 }
